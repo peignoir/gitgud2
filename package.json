@@ -1,0 +1,28 @@
+{
+  "name": "openai-agentkit-demo",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx src/ycMentorConsole.ts",
+    "start": "npm run dev"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@openai/agents": "^0.3.2",
+    "@openai/agents-openai": "^0.3.2",
+    "dotenv": "^16.4.5",
+    "mem0": "npm:mem0ai@2.1.38",
+    "openai": "^6.9.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "tsx": "^4.15.7"
+  }
+}
