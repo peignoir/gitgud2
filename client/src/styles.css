@@ -8,7 +8,8 @@
   }
 
   body {
-    @apply bg-surface text-white min-h-dvh;
+    @apply text-white min-h-dvh;
+    background-color: theme("colors.surface");
     font-family: "SF Pro Display", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
 }
