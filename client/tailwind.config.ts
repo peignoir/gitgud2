@@ -8,12 +8,20 @@ const config: Config = {
       colors: {
         brand: {
           DEFAULT: "#2ad1a3",
-          muted: "#c1f4e4"
+          muted: "#c1f4e4",
+          ink: "#103b2f"
         },
         surface: {
-          DEFAULT: "#edf1f8",
+          DEFAULT: "#e9eef7",
           card: "#ffffff",
-          accent: "#e2e9ff"
+          panel: "#f9fbff",
+          accent: "#e3ebff",
+          border: "#d7deed"
+        },
+        ink: {
+          DEFAULT: "#0f172a",
+          subtle: "#475467",
+          muted: "#667085"
         }
       },
       boxShadow: {

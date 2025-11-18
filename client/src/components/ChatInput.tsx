@@ -17,8 +17,8 @@ export const ChatInput = ({ value, onChange, onSubmit, disabled }: ChatInputProp
   };
 
   return (
-    <form onSubmit={handleSubmit} className="pb-[calc(env(safe-area-inset-bottom)+1rem)]">
-      <div className="rounded-[2rem] border border-slate-200 bg-white px-5 py-4 shadow-lg shadow-slate-900/5">
+    <form onSubmit={handleSubmit} className="pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-2">
+      <div className="rounded-[2rem] border border-surface-border bg-surface-panel px-5 py-4 shadow-lg shadow-slate-900/5">
         <Textarea
           value={value}
           onChange={(event) => onChange(event.target.value)}
@@ -27,7 +27,7 @@ export const ChatInput = ({ value, onChange, onSubmit, disabled }: ChatInputProp
           rows={4}
           className="min-h-[80px] resize-none border-none bg-transparent text-base text-slate-900 placeholder:text-slate-500 focus-visible:ring-0"
         />
-        <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-600">
+        <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-ink-muted">
           <span>Shift + Enter for a newline</span>
           <Button
             type="submit"
