@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ElementType, type ReactNode } from "react";
 import MessageBubble from "@/components/MessageBubble";
 import { ChatInput } from "@/components/ChatInput";
 import { useChat } from "@/hooks/useChat";
@@ -93,137 +93,141 @@ const App = () => {
   );
 
 const tabs = [
-    { id: "dashboard", label: "Home", icon: Home, accent: "from-[#38bdf8] via-[#6366f1] to-[#a855f7]" },
-    { id: "ideas", label: "Ideas", icon: Lightbulb, accent: "from-[#a855f7] to-[#ec4899]" },
-    { id: "build", label: "Build 90", icon: Hammer, accent: "from-[#22c55e] to-[#bef264]" },
-    { id: "founder", label: "Founder", icon: UserCheck, accent: "from-[#14b8a6] to-[#0ea5e9]" },
-    { id: "challenge", label: "Challenge", icon: Trophy, accent: "from-[#d97706] to-[#b45309]" },
-    { id: "console", label: "Console", icon: Terminal, accent: "from-[#84cc16] to-[#22c55e]" }
-  ] as const;
+  { id: "dashboard", label: "Home", icon: Home, accent: "from-[#5EEAD4] to-[#38BDF8]" },
+  { id: "ideas", label: "Ideas", icon: Lightbulb, accent: "from-[#A855F7] to-[#EC4899]" },
+  { id: "build", label: "Build 90", icon: Hammer, accent: "from-[#FACC15] to-[#FB923C]" },
+  { id: "founder", label: "Founder", icon: UserCheck, accent: "from-[#2AD1A3] to-[#0EA5E9]" },
+  { id: "challenge", label: "Challenge", icon: Trophy, accent: "from-[#F97316] to-[#EA580C]" },
+  { id: "console", label: "Console", icon: Terminal, accent: "from-[#A3E635] to-[#22C55E]" }
+] as const;
 
-  const SectionCard = ({
-    title,
-    subtitle,
-    actionLabel,
-    onAction,
-    children
-  }: {
-    title: string;
-    subtitle?: string;
-    actionLabel?: string;
-    onAction?: () => void;
-    children: React.ReactNode;
-  }) => (
-    <section className="rounded-[2rem] border border-surface-border bg-surface-card px-5 py-4 shadow-[0_25px_45px_rgba(15,23,42,0.08)]">
-      <div className="mb-3 flex items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <p className="text-xs uppercase tracking-[0.3em] text-ink-muted">{title}</p>
-            <span className="h-1 w-6 rounded-full bg-[#B0724A]" />
-          </div>
-          {subtitle && <p className="text-sm text-ink-subtle">{subtitle}</p>}
-        </div>
-        {actionLabel && onAction && (
-          <button onClick={onAction} className="text-sm font-semibold text-brand flex items-center gap-1">
-            {actionLabel} <ArrowUpRight className="h-4 w-4" />
-          </button>
-        )}
+const SectionShell = ({
+  kicker,
+  title,
+  description,
+  actionLabel,
+  onAction,
+  children
+}: {
+  kicker?: string;
+  title: string;
+  description?: string;
+  actionLabel?: string;
+  onAction?: () => void;
+  children: ReactNode;
+}) => (
+  <section className="rounded-[32px] border border-surface-border bg-white px-6 py-6 shadow-card space-y-4">
+    <div className="flex items-start justify-between gap-4">
+      <div>
+        {kicker && <p className="text-[11px] uppercase tracking-[0.3em] text-ink-muted">{kicker}</p>}
+        <h2 className="text-2xl font-semibold text-ink">{title}</h2>
+        {description && <p className="mt-1 text-sm text-ink-subtle">{description}</p>}
       </div>
-      {children}
-    </section>
-  );
+      {actionLabel && onAction && (
+        <button
+          onClick={onAction}
+          className="inline-flex items-center gap-1 rounded-full border border-surface-border px-3 py-1 text-sm font-semibold text-ink hover:bg-surface-panel"
+        >
+          {actionLabel}
+          <ArrowUpRight className="h-4 w-4" />
+        </button>
+      )}
+    </div>
+    {children}
+  </section>
+);
+
+const StatCard = ({
+  icon: Icon,
+  label,
+  value,
+  hint
+}: {
+  icon: ElementType;
+  label: string;
+  value: string;
+  hint: string;
+}) => (
+  <div className="flex items-center gap-3 rounded-2xl border border-surface-border bg-white px-4 py-4 shadow-card">
+    <div className="h-12 w-12 rounded-2xl bg-surface-panel text-brand flex items-center justify-center">
+      <Icon className="h-5 w-5" />
+    </div>
+    <div>
+      <p className="text-[11px] uppercase tracking-[0.25em] text-ink-muted">{label}</p>
+      <p className="text-xl font-semibold text-ink">{value}</p>
+      <p className="text-xs text-ink-subtle">{hint}</p>
+    </div>
+  </div>
+);
 
   const renderDashboard = () => (
-    <div className="space-y-4">
-      <section className="rounded-[2rem] border border-surface-border bg-white px-6 py-6 text-ink shadow-[0_35px_50px_rgba(15,23,42,0.15)]">
-        <p className="text-sm uppercase tracking-[0.3em] text-ink-muted">GitGud Mentor</p>
-        <h1 className="mt-2 text-3xl font-semibold leading-snug text-ink">What should we tackle today?</h1>
-        <p className="mt-2 text-sm text-ink-subtle">
-          Choose a track: unlock an idea, build in 90 minutes, know your founder type, or prep for the 9-day challenge.
+    <div className="space-y-5">
+      <section className="rounded-[36px] border border-white/60 bg-gradient-to-br from-[#fff7ec] via-white to-[#e3f0ff] px-6 py-7 shadow-card">
+        <p className="text-[11px] uppercase tracking-[0.35em] text-ink-muted">GitGud Mentor</p>
+        <h1 className="mt-3 text-3xl font-semibold text-ink">What should we tackle today?</h1>
+        <p className="mt-2 text-base text-ink-subtle">
+          Pick a lane: unlock a vetted idea, sprint an MVP in 90 minutes, get your founder archetype, or prep for the 9-day
+          funding challenge.
         </p>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           {[
-            { label: "Find an idea", chip: "12 packs live", icon: Lightbulb },
-            { label: "Resume build sprint", chip: "Step 3 of 6", icon: Hammer }
+            { label: "Find an idea", chip: "12 packs live", icon: Lightbulb, tab: "ideas" as const },
+            { label: "Resume build sprint", chip: "Step 3 of 6", icon: Hammer, tab: "build" as const }
           ].map((cta) => (
             <button
               key={cta.label}
-              className="flex items-center justify-between rounded-2xl border border-surface-border bg-surface-panel px-4 py-3 text-left text-ink shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-              onClick={() => setActiveTab(cta.label.includes("idea") ? "ideas" : "build")}
+              className="flex items-center justify-between rounded-2xl border border-white/60 bg-white/80 px-4 py-3 text-left text-ink shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+              onClick={() => setActiveTab(cta.tab)}
             >
               <div>
-                <p className="text-sm font-semibold">{cta.label}</p>
-                <span className="text-xs text-ink-muted">{cta.chip}</span>
+                <p className="text-base font-semibold">{cta.label}</p>
+                <span className="text-sm text-ink-muted">{cta.chip}</span>
               </div>
               <cta.icon className="h-5 w-5 text-brand" />
             </button>
           ))}
         </div>
-        <div className="mt-5 hidden md:flex md:flex-wrap gap-2">
-          {tabs.map((tab) => (
-            <button
-              key={`hero-${tab.id}`}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                "flex items-center gap-1 rounded-2xl border border-surface-border px-3 py-2 text-sm font-semibold transition",
-                activeTab === tab.id
-                  ? cn("text-white shadow-lg bg-gradient-to-r", tab.accent)
-                  : "bg-white text-ink hover:text-ink"
-              )}
-            >
-              <tab.icon className="h-4 w-4" />
-              {tab.label}
-            </button>
-          ))}
-        </div>
       </section>
 
-      <SectionCard title="Pulse" subtitle="Where you left off">
-        <div className="grid gap-3 sm:grid-cols-3 text-ink">
-          {[
-            { label: "Idea drafts", value: "7 saved", hint: "3 shortlisted" },
-            { label: "Build streak", value: "4 days", hint: "Keep momentum" },
-            { label: "Challenge status", value: "Day 3 of 9", hint: "MVP checkpoint" }
-          ].map((stat) => (
-            <div key={stat.label} className="rounded-2xl bg-white px-4 py-3 shadow-[0_12px_25px_rgba(15,23,42,0.08)]">
-              <p className="text-xs uppercase tracking-[0.25em] text-ink-muted">{stat.label}</p>
-              <p className="text-xl font-semibold text-ink">{stat.value}</p>
-              <p className="text-xs text-ink-subtle">{stat.hint}</p>
-            </div>
-          ))}
+      <SectionShell kicker="Pulse" title="Where you left off">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <StatCard icon={Lightbulb} label="Idea drafts" value="7 saved" hint="3 shortlisted" />
+          <StatCard icon={Hammer} label="Build streak" value="4 days" hint="Keep momentum" />
+          <StatCard icon={Trophy} label="Challenge status" value="Day 3 of 9" hint="MVP checkpoint" />
         </div>
-      </SectionCard>
+      </SectionShell>
 
-      <SectionCard
-        title="Latest mentor drop"
-        subtitle="Highlights from your PDF or search context"
+      <SectionShell
+        kicker="Latest mentor drop"
+        title="Highlights from your PDF or search context"
         actionLabel="See console"
         onAction={() => setActiveTab("console")}
       >
-        <div className="rounded-2xl border border-surface-border bg-white px-4 py-4 text-sm text-ink-subtle">
-          <p className="mb-1 font-semibold text-ink">VC dossier · Uploaded 2h ago</p>
-          The deck leans heavy on solution. Add a 3-slide LP story: asset allocation shift, your edge, and near-term
-          liquidity options.
+        <div className="rounded-2xl border border-surface-border bg-white px-4 py-4 text-sm text-ink-subtle shadow-inner">
+          <p className="mb-1 text-base font-semibold text-ink">VC dossier · Uploaded 2h ago</p>
+          The deck leans heavy on solution. Add a 3-slide LP story: asset allocation shift, your edge, and near-term liquidity
+          options.
         </div>
-      </SectionCard>
+      </SectionShell>
     </div>
   );
 
   const renderIdeas = () => (
-    <div className="space-y-4">
-      <SectionCard title="Idea packs" subtitle="High-signal prompts curated for you">
+    <div className="space-y-5">
+      <SectionShell
+        kicker="Idea packs"
+        title="High-signal prompts curated for you"
+        description="These are refreshed every day based on router searches and your founder profile."
+      >
         <div className="grid gap-4 sm:grid-cols-2">
           {ideaPacks.map((pack) => (
             <div
               key={pack.title}
-              className={cn(
-                "rounded-[1.5rem] bg-gradient-to-br px-5 py-6 text-white shadow-lg",
-                `via-white/10 ${pack.gradient}`
-              )}
+              className={cn("rounded-[28px] px-5 py-6 text-white shadow-card bg-gradient-to-br", `via-white/10 ${pack.gradient}`)}
             >
-              <p className="text-xs uppercase tracking-[0.4em] text-white/70">{pack.theme}</p>
+              <p className="text-[11px] uppercase tracking-[0.4em] text-white/70">{pack.theme}</p>
               <h3 className="mt-2 text-2xl font-semibold">{pack.title}</h3>
-              <p className="mt-1 text-sm text-white/80">{pack.effort}</p>
+              <p className="mt-1 text-sm text-white/85">{pack.effort}</p>
               <button
                 onClick={() => setActiveTab("console")}
                 className="mt-5 inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-semibold text-ink"
@@ -233,33 +237,33 @@ const tabs = [
             </div>
           ))}
         </div>
-      </SectionCard>
+      </SectionShell>
 
-      <SectionCard title="Signals" subtitle="Live router searches">
+      <SectionShell kicker="Signals" title="Live router searches">
         <div className="flex flex-wrap gap-2">
           {["AI + LatAm ops", "LP reporting", "Space SaaS", "Creator banking"].map((chip) => (
-            <span key={chip} className="rounded-full bg-surface-accent px-3 py-1 text-xs font-semibold text-ink">
+            <span key={chip} className="rounded-full bg-surface-accent px-4 py-1.5 text-xs font-semibold text-ink">
               {chip}
             </span>
           ))}
         </div>
-      </SectionCard>
+      </SectionShell>
     </div>
   );
 
   const renderBuild = () => (
-    <div className="space-y-4">
-      <SectionCard title="90-minute build" subtitle="Structured sprint">
+    <div className="space-y-5">
+      <SectionShell kicker="90-minute build" title="Structured sprint">
         <div className="space-y-3">
           {buildSteps.map((step) => (
             <div
               key={step.title}
-              className="flex items-center gap-3 rounded-2xl border border-surface-border bg-white px-4 py-3"
+              className="flex items-center gap-3 rounded-2xl border border-surface-border bg-white px-4 py-3 shadow-card"
             >
               <div
                 className={cn(
-                  "h-10 w-10 rounded-full flex items-center justify-center text-sm font-semibold",
-                  step.status === "done" && "bg-brand text-brand-ink",
+                  "h-11 w-11 rounded-2xl flex items-center justify-center text-sm font-semibold",
+                  step.status === "done" && "bg-brand text-white",
                   step.status === "in-progress" && "bg-surface-accent text-ink",
                   step.status === "next" && "bg-surface-panel text-ink-muted"
                 )}
@@ -274,19 +278,19 @@ const tabs = [
             </div>
           ))}
         </div>
-      </SectionCard>
+      </SectionShell>
     </div>
   );
 
   const renderFounder = () => (
-    <div className="space-y-4">
-      <SectionCard title="Founder archetype" subtitle="Scores refresh after each build">
+    <div className="space-y-5">
+      <SectionShell kicker="Founder archetype" title="Scores refresh after each build">
         <div className="grid gap-4 sm:grid-cols-2">
           {archetypes.map((arc) => (
-            <div key={arc.name} className="rounded-2xl border border-surface-border bg-white px-4 py-4 shadow-md">
+            <div key={arc.name} className="rounded-2xl border border-surface-border bg-white px-4 py-4 shadow-card">
               <div className="flex items-center justify-between">
                 <p className="text-lg font-semibold text-ink">{arc.name}</p>
-                <span className="text-2xl font-bold text-brand">{arc.score}</span>
+                <span className="text-3xl font-bold text-brand">{arc.score}</span>
               </div>
               <p className="mt-2 text-sm text-ink-subtle">{arc.copy}</p>
               <span className="mt-3 inline-flex rounded-full bg-surface-accent px-3 py-1 text-xs font-semibold text-ink">
@@ -295,26 +299,26 @@ const tabs = [
             </div>
           ))}
         </div>
-      </SectionCard>
+      </SectionShell>
 
-      <SectionCard title="Next diagnostic" subtitle="2 min micro quiz unlocks tips" actionLabel="Start quiz">
+      <SectionShell kicker="Next diagnostic" title="2 min micro quiz unlocks tips" actionLabel="Start quiz">
         <div className="rounded-2xl border border-dashed border-surface-border px-4 py-5 text-sm text-ink-subtle">
           “How do you document learnings?” + “How do you validate pricing?” <br />
           Router uses this to tune the mentor stack.
         </div>
-      </SectionCard>
+      </SectionShell>
     </div>
   );
 
   const renderChallenge = () => (
-    <div className="space-y-4">
-      <SectionCard title="9-day funding challenge" subtitle="$30k+ fast track">
+    <div className="space-y-5">
+      <SectionShell kicker="9-day funding challenge" title="$30k+ fast track">
         <div className="grid gap-3 sm:grid-cols-3">
           {challengeDays.map((day) => (
             <div
               key={day.day}
               className={cn(
-                "rounded-2xl border px-4 py-3 text-sm shadow-sm",
+                "rounded-2xl border px-4 py-3 text-sm shadow-card",
                 day.status === "done" && "border-brand bg-brand/10 text-brand-ink",
                 day.status === "active" && "border-ink text-ink bg-white",
                 day.status === "pending" && "border-surface-border text-ink-muted bg-surface-panel"
@@ -325,24 +329,24 @@ const tabs = [
             </div>
           ))}
         </div>
-      </SectionCard>
+      </SectionShell>
 
-      <SectionCard title="Challenge checklist" subtitle="Proofs required">
+      <SectionShell kicker="Challenge checklist" title="Proofs required">
         <ul className="space-y-3 text-sm text-ink-subtle">
-          <li className="flex items-start gap-2">
-            <span className="mt-1 h-2 w-2 rounded-full bg-brand" />
+          <li className="flex items-start gap-3">
+            <span className="mt-1 h-2.5 w-2.5 rounded-full bg-brand" />
             Upload clips of 3 LP interviews validating appetite.
           </li>
-          <li className="flex items-start gap-2">
-            <span className="mt-1 h-2 w-2 rounded-full bg-surface-accent" />
+          <li className="flex items-start gap-3">
+            <span className="mt-1 h-2.5 w-2.5 rounded-full bg-accent-teal" />
             Ship 1-minute Loom demo of MVP stub.
           </li>
-          <li className="flex items-start gap-2">
-            <span className="mt-1 h-2 w-2 rounded-full bg-surface-accent" />
+          <li className="flex items-start gap-3">
+            <span className="mt-1 h-2.5 w-2.5 rounded-full bg-accent-orange" />
             Summarize risk plan for week 2 and who covers it.
           </li>
         </ul>
-      </SectionCard>
+      </SectionShell>
     </div>
   );
 
@@ -395,21 +399,24 @@ const tabs = [
 
   return (
     <div className="min-h-dvh bg-surface text-ink">
-      <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col px-4 pb-28">
-        <header className="pt-[calc(env(safe-area-inset-top)+1rem)] pb-5">
+      <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col px-4 pb-[calc(7rem+env(safe-area-inset-bottom))]">
+        <header className="pt-[calc(env(safe-area-inset-top)+1rem)] pb-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-ink-muted">GitGud VC</p>
               <h1 className="text-3xl font-semibold text-ink">Accelerate your next thing.</h1>
             </div>
-            <Compass className="h-6 w-6 text-brand" />
+            <div className="rounded-2xl bg-white px-3 py-2 text-xs font-semibold text-brand shadow-card flex items-center gap-2">
+              <Compass className="h-4 w-4" />
+              Router ready
+            </div>
           </div>
         </header>
 
-        <main className="flex-1 min-h-0 space-y-4 pb-6">{renderActiveTab()}</main>
+        <main className="flex-1 min-h-0 space-y-5">{renderActiveTab()}</main>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 border-t border-surface-border bg-white/95 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 shadow-[0_-15px_35px_rgba(15,23,42,0.08)] md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-surface-border/80 bg-white/90 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 shadow-[0_-20px_40px_rgba(15,23,42,0.12)] backdrop-blur-lg">
         <div className="mx-auto grid max-w-3xl grid-cols-6 gap-2">
           {tabs.map((tab) => (
             <button
@@ -417,9 +424,7 @@ const tabs = [
               onClick={() => setActiveTab(tab.id)}
               className={cn(
                 "flex flex-col items-center rounded-2xl px-2 py-2 text-xs font-semibold transition",
-                activeTab === tab.id
-                  ? cn("text-white shadow-lg bg-gradient-to-r", tab.accent)
-                  : "text-ink"
+                activeTab === tab.id ? cn("text-white shadow-card bg-gradient-to-r", tab.accent) : "text-ink-muted"
               )}
             >
               <tab.icon className="mb-1 h-5 w-5" />
