@@ -159,7 +159,7 @@ const App = () => {
             </button>
           ))}
         </div>
-        <div className="mt-5 hidden flex-wrap gap-2 md:flex">
+        <div className="mt-5 hidden md:flex md:flex-wrap gap-2">
           {tabs.map((tab) => (
             <button
               key={`hero-${tab.id}`}
