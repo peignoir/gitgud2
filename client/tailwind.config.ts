@@ -7,17 +7,17 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          DEFAULT: "#f5d580",
-          muted: "#f7e5b5"
+          DEFAULT: "#2ad1a3",
+          muted: "#c1f4e4"
         },
         surface: {
-          DEFAULT: "#0c1324",
-          raised: "rgba(255,255,255,0.08)",
-          card: "rgba(10,16,30,0.85)"
+          DEFAULT: "#edf1f8",
+          card: "#ffffff",
+          accent: "#e2e9ff"
         }
       },
       boxShadow: {
-        glow: "0 20px 60px rgba(7, 11, 24, 0.65)"
+        glow: "0 35px 70px rgba(21, 41, 92, 0.15)"
       },
       fontFamily: {
         sans: [

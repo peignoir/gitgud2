@@ -12,10 +12,10 @@ const MessageBubble = memo(({ message }: MessageBubbleProps) => {
     <div className={cn("flex w-full", isUser ? "justify-end" : "justify-start")}>
       <div
         className={cn(
-          "max-w-[85%] rounded-3xl border px-5 py-4 text-sm leading-relaxed shadow-glow backdrop-blur-sm whitespace-pre-line",
+          "max-w-[85%] rounded-3xl border px-5 py-4 text-[0.95rem] leading-relaxed shadow-md whitespace-pre-line",
           isUser
             ? "bg-brand text-slate-900 border-brand/30 rounded-br-xl"
-            : "bg-white text-slate-900 border-black/5 rounded-bl-xl",
+            : "bg-white text-slate-900 border-slate-200 rounded-bl-xl",
           message.pending && "opacity-70"
         )}
       >

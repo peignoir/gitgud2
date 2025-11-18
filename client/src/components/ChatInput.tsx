@@ -17,17 +17,17 @@ export const ChatInput = ({ value, onChange, onSubmit, disabled }: ChatInputProp
   };
 
   return (
-    <form onSubmit={handleSubmit} className="pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
-      <div className="rounded-3xl border border-white/12 bg-surface-card px-4 py-4 shadow-glow backdrop-blur-md supports-[backdrop-filter]:bg-surface-card/80">
+    <form onSubmit={handleSubmit} className="pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+      <div className="rounded-[2rem] border border-slate-200 bg-white/95 px-5 py-4 shadow-lg shadow-slate-900/5 backdrop-blur">
         <Textarea
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder="Ask about LP outreach, vehicle design..."
           disabled={disabled}
-          rows={3}
-          className="min-h-[72px] resize-none bg-white text-base text-slate-900 placeholder:text-slate-500"
+          rows={4}
+          className="min-h-[80px] resize-none border-none bg-transparent text-base text-slate-900 placeholder:text-slate-500 focus-visible:ring-0"
         />
-        <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-white/60">
+        <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500">
           <span>Shift + Enter for a newline</span>
           <Button
             type="submit"

@@ -24,15 +24,15 @@ const App = () => {
   }, [messages]);
 
   return (
-    <div className="min-h-dvh text-slate-100">
-      <div className="mx-auto flex min-h-dvh w-full max-w-4xl flex-col px-4 pb-6">
-        <header className="pt-[calc(env(safe-area-inset-top)+1.5rem)] pb-5">
-          <div className="rounded-3xl border border-white/10 bg-surface-card px-5 py-4 shadow-glow backdrop-blur-md">
+    <div className="min-h-dvh text-slate-900">
+      <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col px-4 pb-8">
+        <header className="pt-[calc(env(safe-area-inset-top)+1.25rem)] pb-4">
+          <div className="rounded-[2rem] border border-slate-200 bg-white/90 px-5 py-4 shadow-glow backdrop-blur">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-[0.65rem] uppercase tracking-[0.35em] text-white/60">GitGud Mentor</p>
-                <h1 className="text-2xl font-semibold text-white">YC-style advice for GPs</h1>
-                <p className="text-sm text-white/70">Ask about fundraising, vehicles, or YC-style execution.</p>
+                <p className="text-[0.7rem] uppercase tracking-[0.35em] text-slate-500">GitGud Mentor</p>
+                <h1 className="text-2xl font-semibold text-slate-900">YC-style advice for GPs</h1>
+                <p className="text-sm text-slate-500">Ask about fundraising, vehicles, or YC-style execution.</p>
               </div>
               <div className="flex items-center gap-2">
                 <CommandSheet onCommand={(command) => setInput((prev) => `${command} ${prev}`.trim())} />
@@ -45,13 +45,13 @@ const App = () => {
         <main className="flex-1 min-h-0 pb-4">
           <div
             ref={listRef}
-            className="h-full overflow-y-auto space-y-4 rounded-3xl border border-white/10 bg-surface-raised px-4 py-6 shadow-glow backdrop-blur"
+            className="h-full overflow-y-auto space-y-4 rounded-[2rem] border border-slate-200 bg-white/95 px-4 py-6 shadow-lg shadow-slate-900/5"
           >
             {messages.map((message) => (
               <MessageBubble key={message.id} message={message} />
             ))}
             {isStreaming && (
-              <Button variant="ghost" size="sm" className="mx-auto text-xs text-white/70" onClick={cancel}>
+              <Button variant="ghost" size="sm" className="mx-auto text-xs text-slate-500" onClick={cancel}>
                 <RefreshCw className="mr-2 h-4 w-4" /> Stop response
               </Button>
             )}
