@@ -132,20 +132,20 @@ const App = () => {
 
   const renderDashboard = () => (
     <div className="space-y-4">
-      <section className="rounded-[2rem] bg-gradient-to-r from-[#0f172a] to-[#1e293b] px-6 py-6 text-white shadow-glow">
-        <p className="text-sm uppercase tracking-[0.25em] text-white/60">GitGud Mentor</p>
+      <section className="rounded-[2rem] bg-[#10162F] px-6 py-6 text-white shadow-[0_35px_60px_rgba(15,23,42,0.45)]">
+        <p className="text-sm uppercase tracking-[0.3em] text-white/60">GitGud Mentor</p>
         <h1 className="mt-2 text-3xl font-semibold leading-snug">What should we tackle today?</h1>
-        <p className="mt-2 text-white/80 text-sm">
+        <p className="mt-2 text-white/85 text-sm">
           Choose a track: unlock an idea, build in 90 minutes, know your founder type, or prep for the 9-day challenge.
         </p>
-        <div className="mt-5 grid gap-3 text-ink sm:grid-cols-2">
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
           {[
             { label: "Find an idea", chip: "12 packs live", icon: Lightbulb },
             { label: "Resume build sprint", chip: "Step 3 of 6", icon: Hammer }
           ].map((cta) => (
             <button
               key={cta.label}
-              className="flex items-center justify-between rounded-2xl bg-white/95 px-4 py-3 text-left shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+              className="flex items-center justify-between rounded-2xl bg-white px-4 py-3 text-left text-ink shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
               onClick={() => setActiveTab(cta.label.includes("idea") ? "ideas" : "build")}
             >
               <div>
@@ -165,7 +165,7 @@ const App = () => {
             { label: "Build streak", value: "4 days", hint: "Keep momentum" },
             { label: "Challenge status", value: "Day 3 of 9", hint: "MVP checkpoint" }
           ].map((stat) => (
-            <div key={stat.label} className="rounded-2xl bg-surface-panel px-4 py-3 shadow-inner shadow-white/60">
+            <div key={stat.label} className="rounded-2xl bg-white px-4 py-3 shadow-[0_12px_25px_rgba(15,23,42,0.08)]">
               <p className="text-xs uppercase tracking-[0.25em] text-ink-muted">{stat.label}</p>
               <p className="text-xl font-semibold text-ink">{stat.value}</p>
               <p className="text-xs text-ink-subtle">{stat.hint}</p>
