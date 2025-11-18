@@ -92,7 +92,7 @@ const App = () => {
     []
   );
 
-  const tabs = [
+const tabs = [
     { id: "dashboard", label: "Home", icon: Home, accent: "from-[#38bdf8] via-[#6366f1] to-[#a855f7]" },
     { id: "ideas", label: "Ideas", icon: Lightbulb, accent: "from-[#a855f7] to-[#ec4899]" },
     { id: "build", label: "Build 90", icon: Hammer, accent: "from-[#22c55e] to-[#bef264]" },
@@ -393,6 +393,9 @@ const App = () => {
     }
   };
 
+  const appVersion =
+    (import.meta.env.VITE_APP_VERSION as string | undefined) ?? (typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "dev");
+
   return (
     <div className="min-h-dvh bg-surface text-ink">
       <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col px-4 pb-28">
@@ -407,6 +410,9 @@ const App = () => {
         </header>
 
         <main className="flex-1 min-h-0 space-y-4 pb-6">{renderActiveTab()}</main>
+        <footer className="mt-auto hidden pb-6 text-xs text-ink-muted md:block">
+          GitGud Mentor &middot; build {appVersion}
+        </footer>
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 border-t border-surface-border bg-white/95 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 shadow-[0_-15px_35px_rgba(15,23,42,0.08)] md:hidden">
