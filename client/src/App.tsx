@@ -187,21 +187,6 @@ const StatCard = ({
             </button>
           ))}
         </div>
-        <div className="mt-5 hidden md:grid grid-cols-3 gap-3">
-          {tabs.map((tab) => (
-            <button
-              key={`hero-nav-${tab.id}`}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                "flex items-center justify-center gap-2 rounded-2xl border border-white/70 px-3 py-2 text-sm font-semibold transition",
-                activeTab === tab.id ? cn("text-white shadow-card bg-gradient-to-r", tab.accent) : "bg-white/90 text-ink"
-              )}
-            >
-              <tab.icon className="h-4 w-4" />
-              {tab.label}
-            </button>
-          ))}
-        </div>
       </section>
 
       <SectionShell kicker="Pulse" title="Where you left off">
@@ -431,18 +416,20 @@ const StatCard = ({
         <main className="flex-1 min-h-0 space-y-5">{renderActiveTab()}</main>
       </div>
 
-      <nav className="md:hidden fixed inset-x-0 bottom-0 z-20 border-t border-surface-border/80 bg-white/90 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 shadow-[0_-20px_40px_rgba(15,23,42,0.12)] backdrop-blur-lg">
-        <div className="mx-auto grid max-w-3xl grid-cols-6 gap-2">
+      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-surface-border/80 bg-white/90 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 shadow-[0_-20px_40px_rgba(15,23,42,0.12)] backdrop-blur-lg">
+        <div className="mx-auto max-w-3xl grid grid-cols-6 gap-2 md:flex md:items-center md:justify-between md:gap-3">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex flex-col items-center rounded-2xl px-2 py-2 text-xs font-semibold transition",
-                activeTab === tab.id ? cn("text-white shadow-card bg-gradient-to-r", tab.accent) : "text-ink-muted"
+                "flex flex-col items-center rounded-2xl px-2 py-2 text-xs font-semibold transition md:flex-row md:gap-2 md:px-3",
+                activeTab === tab.id
+                  ? cn("text-white shadow-card bg-gradient-to-r", tab.accent)
+                  : "text-ink-muted md:text-ink"
               )}
             >
-              <tab.icon className="mb-1 h-5 w-5" />
+              <tab.icon className="mb-1 h-5 w-5 md:mb-0" />
               {tab.label}
             </button>
           ))}
