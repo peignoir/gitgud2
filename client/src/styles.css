@@ -5,11 +5,15 @@
 @layer base {
   :root {
     color-scheme: dark;
+    --surface: #0c1324;
   }
 
   body {
-    @apply text-white min-h-dvh;
-    background-color: theme("colors.surface");
+    @apply text-slate-100 min-h-dvh;
+    background-color: theme("colors.surface.DEFAULT");
+    background-image: radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.18), transparent 45%),
+      radial-gradient(circle at 80% 0%, rgba(247, 213, 128, 0.25), transparent 55%),
+      linear-gradient(160deg, #090f1d 0%, #050713 45%, #070a14 100%);
     font-family: "SF Pro Display", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
 }

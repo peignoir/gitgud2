@@ -10,7 +10,14 @@ const config: Config = {
           DEFAULT: "#f5d580",
           muted: "#f7e5b5"
         },
-        surface: "#05060a"
+        surface: {
+          DEFAULT: "#0c1324",
+          raised: "rgba(255,255,255,0.08)",
+          card: "rgba(10,16,30,0.85)"
+        }
+      },
+      boxShadow: {
+        glow: "0 20px 60px rgba(7, 11, 24, 0.65)"
       },
       fontFamily: {
         sans: [

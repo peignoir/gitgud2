@@ -24,34 +24,42 @@ const App = () => {
   }, [messages]);
 
   return (
-    <div className="min-h-dvh bg-surface text-white flex flex-col">
-      <header className="px-4 pt-[calc(env(safe-area-inset-top)+1rem)] pb-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.4em] text-white/40">GitGud Mentor</p>
-            <h1 className="text-xl font-semibold">YC-style advice for GPs</h1>
+    <div className="min-h-dvh text-slate-100">
+      <div className="mx-auto flex min-h-dvh w-full max-w-4xl flex-col px-4 pb-6">
+        <header className="pt-[calc(env(safe-area-inset-top)+1.5rem)] pb-5">
+          <div className="rounded-3xl border border-white/10 bg-surface-card px-5 py-4 shadow-glow backdrop-blur-md">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-[0.65rem] uppercase tracking-[0.35em] text-white/60">GitGud Mentor</p>
+                <h1 className="text-2xl font-semibold text-white">YC-style advice for GPs</h1>
+                <p className="text-sm text-white/70">Ask about fundraising, vehicles, or YC-style execution.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <CommandSheet onCommand={(command) => setInput((prev) => `${command} ${prev}`.trim())} />
+                <PdfUploadSheet />
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <CommandSheet onCommand={(command) => setInput((prev) => `${command} ${prev}`.trim())} />
-            <PdfUploadSheet />
+        </header>
+
+        <main className="flex-1 min-h-0 pb-4">
+          <div
+            ref={listRef}
+            className="h-full overflow-y-auto space-y-4 rounded-3xl border border-white/10 bg-surface-raised px-4 py-6 shadow-glow backdrop-blur"
+          >
+            {messages.map((message) => (
+              <MessageBubble key={message.id} message={message} />
+            ))}
+            {isStreaming && (
+              <Button variant="ghost" size="sm" className="mx-auto text-xs text-white/70" onClick={cancel}>
+                <RefreshCw className="mr-2 h-4 w-4" /> Stop response
+              </Button>
+            )}
           </div>
-        </div>
-      </header>
+        </main>
 
-      <main className="flex-1 min-h-0">
-        <div ref={listRef} className="h-full overflow-y-auto px-4 pb-4 space-y-4">
-          {messages.map((message) => (
-            <MessageBubble key={message.id} message={message} />
-          ))}
-          {isStreaming && (
-            <Button variant="ghost" size="sm" className="mx-auto text-xs text-white/60" onClick={cancel}>
-              <RefreshCw className="h-4 w-4 mr-2" /> Stop response
-            </Button>
-          )}
-        </div>
-      </main>
-
-      <ChatInput value={input} onChange={setInput} onSubmit={handleSubmit} disabled={isStreaming} />
+        <ChatInput value={input} onChange={setInput} onSubmit={handleSubmit} disabled={isStreaming} />
+      </div>
     </div>
   );
 };
