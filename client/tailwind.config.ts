@@ -7,21 +7,25 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          DEFAULT: "#2ad1a3",
-          muted: "#c1f4e4",
-          ink: "#103b2f"
+          DEFAULT: "#4263EB", // open-color indigo 7
+          muted: "#BAC8FF", // indigo 3
+          ink: "#1C275B" // deep indigo
         },
         surface: {
-          DEFAULT: "#e9eef7",
-          card: "#ffffff",
-          panel: "#f9fbff",
-          accent: "#e3ebff",
-          border: "#d7deed"
+          DEFAULT: "#F8F9FA", // gray 0
+          card: "#FFFFFF",
+          panel: "#F1F3F5", // gray 1
+          accent: "#DBE4FF", // indigo 1
+          border: "#CED4DA" // gray 4
         },
         ink: {
-          DEFAULT: "#0f172a",
+          DEFAULT: "#101828",
           subtle: "#475467",
           muted: "#667085"
+        },
+        accent: {
+          orange: "#FF8A1D",
+          teal: "#2AD1A3"
         }
       },
       boxShadow: {

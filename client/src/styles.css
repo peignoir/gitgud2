@@ -5,15 +5,22 @@
 @layer base {
   :root {
     color-scheme: light;
+    --oc-gray-0: #f8f9fa;
+    --oc-gray-1: #f1f3f5;
+    --oc-gray-7: #495057;
+    --oc-gray-9: #212529;
+    --oc-indigo-7: #4263eb;
   }
 
   body {
-    @apply min-h-dvh bg-[#f5f6fb] text-[#0f172a];
+    @apply min-h-dvh;
+    background-color: var(--oc-gray-0);
+    color: var(--oc-gray-9);
     font-family: "SF Pro Display", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
 
   body.contrast-debug * {
-    outline: 1px solid rgba(255, 0, 0, 0.35);
+    outline: 1px solid rgba(66, 99, 235, 0.35);
   }
 }
 
