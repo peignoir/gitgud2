@@ -9,6 +9,10 @@ declare global {
   }
 }
 
+const appVersion =
+  (import.meta.env.VITE_APP_VERSION as string | undefined) ?? (typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "dev");
+console.info(`[GitGud Mentor] build ${appVersion}`);
+
 const rootEl = document.getElementById("root")!;
 
 const applyContrastClass = (enabled: boolean) => {

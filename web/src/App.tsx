@@ -540,14 +540,9 @@ export default function App() {
     }
   ];
 
-  const appVersion =
-    (import.meta.env.VITE_APP_VERSION as string | undefined) ?? (typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "dev");
-
   return (
     <div className="flex min-h-dvh flex-col bg-consoleBg text-consoleFg overflow-hidden">
-      <header className="p-4 text-center text-lg font-semibold tracking-wide">
-        Welcome to GitGud.vc · build {appVersion}
-      </header>
+      <header className="p-4 text-center text-lg font-semibold tracking-wide">Welcome to GitGud.vc</header>
 
       <main className="flex-1 min-h-0 px-3 pb-4 flex flex-col gap-4">
         <div className="flex flex-wrap items-start gap-3">
