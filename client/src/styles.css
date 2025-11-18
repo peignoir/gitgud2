@@ -9,10 +9,10 @@
   }
 
   body {
-    @apply text-slate-900 min-h-dvh;
-    background-image: radial-gradient(circle at 10% 20%, rgba(73, 148, 255, 0.25), transparent 45%),
-      radial-gradient(circle at 80% 0%, rgba(42, 209, 163, 0.2), transparent 50%),
-      linear-gradient(180deg, #f6f8fd 0%, #eef2f7 60%, #e3e7ef 100%);
+    @apply text-slate-900 min-h-dvh bg-[#f6f8fb];
+    background-image: radial-gradient(circle at 12% 20%, rgba(104, 161, 255, 0.22), transparent 40%),
+      radial-gradient(circle at 80% 0%, rgba(42, 209, 163, 0.18), transparent 55%),
+      linear-gradient(180deg, #f7f9fc 0%, #eef2f7 60%, #e6ebf3 100%);
     font-family: "SF Pro Display", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
 }
