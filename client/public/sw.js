@@ -1,4 +1,4 @@
-const CACHE = "gitgud-shell-v1";
+const CACHE = "gitgud-shell-v2";
 const ASSETS = ["/", "/index.html", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
@@ -21,6 +21,22 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET" || request.url.includes("/api/")) {
     return;
   }
+
+  // Always fetch navigations from the network so new HTML references the latest assets
+  if (request.mode === "navigate") {
+    event.respondWith(
+      fetch(request).catch(() =>
+        caches.match("/index.html")
+      )
+    );
+    return;
+  }
+
+  const destinationsToCache = ["style", "script", "font", "image"];
+  if (!destinationsToCache.includes(request.destination)) {
+    return;
+  }
+
   event.respondWith(
     caches.match(request).then((cached) => {
       if (cached) {
