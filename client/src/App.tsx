@@ -92,6 +92,24 @@ const App = () => {
     []
   );
 
+  const renderDesktopNav = () => (
+    <div className="hidden md:flex md:flex-wrap gap-2 rounded-3xl border border-surface-border bg-white px-4 py-3 shadow-card">
+      {tabs.map((tab) => (
+        <button
+          key={`desktop-nav-${tab.id}`}
+          onClick={() => setActiveTab(tab.id)}
+          className={cn(
+            "flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-semibold transition",
+            activeTab === tab.id ? cn("text-white shadow-card bg-gradient-to-r", tab.accent) : "text-ink hover:text-ink"
+          )}
+        >
+          <tab.icon className="h-4 w-4" />
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+
 const tabs = [
   { id: "dashboard", label: "Home", icon: Home, accent: "from-[#5EEAD4] to-[#38BDF8]" },
   { id: "ideas", label: "Ideas", icon: Lightbulb, accent: "from-[#A855F7] to-[#EC4899]" },
@@ -160,7 +178,7 @@ const StatCard = ({
   </div>
 );
 
-  const renderDashboard = () => (
+const renderDashboard = () => (
     <div className="space-y-5">
       <section className="rounded-[36px] border border-white/60 bg-gradient-to-br from-[#fff7ec] via-white to-[#e3f0ff] px-6 py-7 shadow-card">
         <p className="text-[11px] uppercase tracking-[0.35em] text-ink-muted">GitGud Mentor</p>
@@ -188,6 +206,8 @@ const StatCard = ({
           ))}
         </div>
       </section>
+
+      {renderDesktopNav()}
 
       <SectionShell kicker="Pulse" title="Where you left off">
         <div className="grid gap-3 sm:grid-cols-3">
