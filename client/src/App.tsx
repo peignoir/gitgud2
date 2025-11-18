@@ -132,10 +132,10 @@ const App = () => {
 
   const renderDashboard = () => (
     <div className="space-y-4">
-      <section className="rounded-[2rem] bg-[#10162F] px-6 py-6 text-white shadow-[0_35px_60px_rgba(15,23,42,0.45)]">
-        <p className="text-sm uppercase tracking-[0.3em] text-white/60">GitGud Mentor</p>
-        <h1 className="mt-2 text-3xl font-semibold leading-snug">What should we tackle today?</h1>
-        <p className="mt-2 text-white/85 text-sm">
+      <section className="rounded-[2rem] border border-surface-border bg-white px-6 py-6 text-ink shadow-[0_35px_50px_rgba(15,23,42,0.15)]">
+        <p className="text-sm uppercase tracking-[0.3em] text-ink-muted">GitGud Mentor</p>
+        <h1 className="mt-2 text-3xl font-semibold leading-snug text-ink">What should we tackle today?</h1>
+        <p className="mt-2 text-sm text-ink-subtle">
           Choose a track: unlock an idea, build in 90 minutes, know your founder type, or prep for the 9-day challenge.
         </p>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -145,11 +145,11 @@ const App = () => {
           ].map((cta) => (
             <button
               key={cta.label}
-              className="flex items-center justify-between rounded-2xl bg-white px-4 py-3 text-left text-ink shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+              className="flex items-center justify-between rounded-2xl border border-surface-border bg-surface-panel px-4 py-3 text-left text-ink shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
               onClick={() => setActiveTab(cta.label.includes("idea") ? "ideas" : "build")}
             >
               <div>
-                <p className="text-sm font-semibold text-ink">{cta.label}</p>
+                <p className="text-sm font-semibold">{cta.label}</p>
                 <span className="text-xs text-ink-muted">{cta.chip}</span>
               </div>
               <cta.icon className="h-5 w-5 text-brand" />
@@ -384,12 +384,27 @@ const App = () => {
             </div>
             <Compass className="h-6 w-6 text-brand" />
           </div>
+          <nav className="mt-4 hidden gap-2 rounded-2xl border border-surface-border bg-white px-3 py-2 shadow-sm md:flex">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "flex items-center gap-1 rounded-2xl px-3 py-2 text-sm font-semibold transition",
+                  activeTab === tab.id ? "bg-brand/10 text-brand" : "text-ink-muted hover:text-ink"
+                )}
+              >
+                <tab.icon className="h-4 w-4" />
+                {tab.label}
+              </button>
+            ))}
+          </nav>
         </header>
 
         <main className="flex-1 min-h-0 space-y-4 pb-6">{renderActiveTab()}</main>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 border-t border-surface-border bg-white/95 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 shadow-[0_-15px_35px_rgba(15,23,42,0.08)]">
+      <nav className="fixed inset-x-0 bottom-0 border-t border-surface-border bg-white/95 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 shadow-[0_-15px_35px_rgba(15,23,42,0.08)] md:hidden">
         <div className="mx-auto grid max-w-3xl grid-cols-6 gap-2">
           {tabs.map((tab) => (
             <button
