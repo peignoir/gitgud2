@@ -1,4 +1,12 @@
 node_modules/
 dist/
+dist-web/
+.tmpuploads/
+.cache/
+dist-client/
+.tmpuploads/
+.cache/
+dist-client/
+.DS_Store
 .env
 

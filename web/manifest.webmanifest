@@ -1,0 +1,10 @@
+{
+  "name": "YC Mentor Workflow",
+  "short_name": "YC Mentor",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1f232b",
+  "theme_color": "#1f232b",
+  "icons": []
+}
+
