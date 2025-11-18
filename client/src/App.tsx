@@ -416,17 +416,17 @@ const StatCard = ({
         <main className="flex-1 min-h-0 space-y-5">{renderActiveTab()}</main>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-surface-border/80 bg-white/90 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 shadow-[0_-20px_40px_rgba(15,23,42,0.12)] backdrop-blur-lg">
+      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-surface-border/80 bg-white/90 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 shadow-[0_-20px_40px_rgba(15,23,42,0.12)] backdrop-blur-lg md:static md:mt-10 md:rounded-3xl md:border md:border-surface-border md:px-5 md:py-3 md:shadow-card md:bg-white">
         <div className="mx-auto max-w-3xl grid grid-cols-6 gap-2 md:flex md:items-center md:justify-between md:gap-3">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex flex-col items-center rounded-2xl px-2 py-2 text-xs font-semibold transition md:flex-row md:gap-2 md:px-3",
+                "flex flex-col items-center rounded-2xl px-2 py-2 text-xs font-semibold transition md:flex-row md:gap-2 md:px-4 md:py-2",
                 activeTab === tab.id
                   ? cn("text-white shadow-card bg-gradient-to-r", tab.accent)
-                  : "text-ink-muted md:text-ink"
+                  : "text-ink-muted md:text-ink md:bg-surface-panel"
               )}
             >
               <tab.icon className="mb-1 h-5 w-5 md:mb-0" />
