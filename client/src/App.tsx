@@ -156,6 +156,21 @@ const App = () => {
             </button>
           ))}
         </div>
+        <div className="mt-5 hidden flex-wrap gap-2 md:flex">
+          {tabs.map((tab) => (
+            <button
+              key={`hero-${tab.id}`}
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "flex items-center gap-1 rounded-2xl border border-surface-border px-3 py-2 text-sm font-semibold transition",
+                activeTab === tab.id ? "bg-brand text-white border-brand" : "text-ink-muted hover:text-ink"
+              )}
+            >
+              <tab.icon className="h-4 w-4" />
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </section>
 
       <SectionCard title="Pulse" subtitle="Where you left off">
@@ -384,21 +399,6 @@ const App = () => {
             </div>
             <Compass className="h-6 w-6 text-brand" />
           </div>
-          <nav className="mt-4 hidden gap-2 rounded-2xl border border-surface-border bg-white px-3 py-2 shadow-sm md:flex">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  "flex items-center gap-1 rounded-2xl px-3 py-2 text-sm font-semibold transition",
-                  activeTab === tab.id ? "bg-brand/10 text-brand" : "text-ink-muted hover:text-ink"
-                )}
-              >
-                <tab.icon className="h-4 w-4" />
-                {tab.label}
-              </button>
-            ))}
-          </nav>
         </header>
 
         <main className="flex-1 min-h-0 space-y-4 pb-6">{renderActiveTab()}</main>
