@@ -10,3 +10,4 @@ dist-client/
 .DS_Store
 .env
 
+.vercel
