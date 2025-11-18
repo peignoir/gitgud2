@@ -93,12 +93,12 @@ const App = () => {
   );
 
   const tabs = [
-    { id: "dashboard", label: "Home", icon: Home },
-    { id: "ideas", label: "Ideas", icon: Lightbulb },
-    { id: "build", label: "Build 90", icon: Hammer },
-    { id: "founder", label: "Founder", icon: UserCheck },
-    { id: "challenge", label: "Challenge", icon: Trophy },
-    { id: "console", label: "Console", icon: Terminal }
+    { id: "dashboard", label: "Home", icon: Home, accent: "from-[#38bdf8] via-[#6366f1] to-[#a855f7]" },
+    { id: "ideas", label: "Ideas", icon: Lightbulb, accent: "from-[#a855f7] to-[#ec4899]" },
+    { id: "build", label: "Build 90", icon: Hammer, accent: "from-[#22c55e] to-[#bef264]" },
+    { id: "founder", label: "Founder", icon: UserCheck, accent: "from-[#14b8a6] to-[#0ea5e9]" },
+    { id: "challenge", label: "Challenge", icon: Trophy, accent: "from-[#d97706] to-[#b45309]" },
+    { id: "console", label: "Console", icon: Terminal, accent: "from-[#84cc16] to-[#22c55e]" }
   ] as const;
 
   const SectionCard = ({
@@ -117,7 +117,10 @@ const App = () => {
     <section className="rounded-[2rem] border border-surface-border bg-surface-card px-5 py-4 shadow-[0_25px_45px_rgba(15,23,42,0.08)]">
       <div className="mb-3 flex items-center justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-ink-muted">{title}</p>
+          <div className="flex items-center gap-2">
+            <p className="text-xs uppercase tracking-[0.3em] text-ink-muted">{title}</p>
+            <span className="h-1 w-6 rounded-full bg-[#B0724A]" />
+          </div>
           {subtitle && <p className="text-sm text-ink-subtle">{subtitle}</p>}
         </div>
         {actionLabel && onAction && (
@@ -163,7 +166,9 @@ const App = () => {
               onClick={() => setActiveTab(tab.id)}
               className={cn(
                 "flex items-center gap-1 rounded-2xl border border-surface-border px-3 py-2 text-sm font-semibold transition",
-                activeTab === tab.id ? "bg-brand text-white border-brand" : "text-ink-muted hover:text-ink"
+                activeTab === tab.id
+                  ? cn("text-white shadow-lg bg-gradient-to-r", tab.accent)
+                  : "bg-white text-ink hover:text-ink"
               )}
             >
               <tab.icon className="h-4 w-4" />
@@ -412,7 +417,9 @@ const App = () => {
               onClick={() => setActiveTab(tab.id)}
               className={cn(
                 "flex flex-col items-center rounded-2xl px-2 py-2 text-xs font-semibold transition",
-                activeTab === tab.id ? "text-brand bg-surface-accent" : "text-ink-muted"
+                activeTab === tab.id
+                  ? cn("text-white shadow-lg bg-gradient-to-r", tab.accent)
+                  : "text-ink"
               )}
             >
               <tab.icon className="mb-1 h-5 w-5" />
