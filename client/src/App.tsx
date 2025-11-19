@@ -4,7 +4,6 @@ import { ChatInput } from "@/components/ChatInput";
 import { useChat } from "@/hooks/useChat";
 import { CommandSheet } from "@/components/CommandSheet";
 import { PdfUploadSheet } from "@/components/PdfUploadSheet";
-import { Sparkles } from "lucide-react";
 
 const App = () => {
   const { messages, sendMessage, isStreaming } = useChat();
@@ -21,14 +20,11 @@ const App = () => {
   }, [messages]);
 
   return (
-    <div className="flex h-dvh flex-col bg-surface">
-      <header className="flex items-center justify-between border-b border-surface-border bg-white px-4 py-4 shadow-sm">
+    <div className="flex h-dvh flex-col bg-[#0e111b] text-white font-mono">
+      <header className="flex items-center justify-between border-b border-white/10 bg-[#1a1f29] px-4 py-3">
         <div>
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-brand" />
-            <h1 className="text-xl font-bold text-ink">GitGud Mentor</h1>
-          </div>
-          <p className="text-xs text-ink-muted">Your YC-style AI advisor</p>
+          <div className="text-xs uppercase tracking-[0.3em] text-white/60">GitGud Mentor</div>
+          <div className="text-sm text-white/80">YC-style AI workflow</div>
         </div>
         <div className="flex items-center gap-2">
           <CommandSheet onCommand={(cmd) => setInput(cmd + " ")} />
@@ -36,17 +32,15 @@ const App = () => {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
+      <main className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
         {messages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
-            <div className="max-w-md text-center space-y-4">
-              <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-brand/10">
-                <Sparkles className="h-8 w-8 text-brand" />
-              </div>
-              <h2 className="text-2xl font-semibold text-ink">Ready to help</h2>
-              <p className="text-sm text-ink-subtle">
-                Ask me about MVPs, fundraising, VC funds, or share your startup idea. Use <span className="font-semibold">/</span> for quick commands.
+            <div className="max-w-md text-center space-y-3">
+              <div className="text-yellow-300 text-lg font-bold">YC Mentor Console</div>
+              <p className="text-sm text-white/70 font-mono">
+                Ask about MVPs, fundraising, VC funds, or share your startup idea.
               </p>
+              <p className="text-xs text-white/50">Use / for commands • + for PDF upload</p>
             </div>
           </div>
         ) : (
@@ -59,7 +53,7 @@ const App = () => {
         )}
       </main>
 
-      <footer className="border-t border-surface-border bg-white px-4 py-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+      <footer className="border-t border-white/10 bg-[#1a1f29] px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
         <ChatInput
           value={input}
           onChange={setInput}

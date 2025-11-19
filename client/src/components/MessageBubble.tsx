@@ -6,25 +6,28 @@ type MessageBubbleProps = {
   message: ChatMessage;
 };
 
+// Strip ANSI escape codes from terminal output
+const stripAnsi = (text: string) => {
+  return text.replace(/\x1b\[[0-9;]*m/g, "");
+};
+
 const MessageBubble = memo(({ message }: MessageBubbleProps) => {
   const isUser = message.role === "user";
+  const cleanContent = stripAnsi(message.content || "");
+
   return (
-    <div className={cn("flex w-full", isUser ? "justify-end" : "justify-start")}>
-      <div className="flex max-w-[85%] flex-col gap-1">
-        <span className="text-[0.65rem] uppercase tracking-[0.3em] text-ink-muted/80">
-          {isUser ? "You" : "Mentor"}
-        </span>
-        <div
-          className={cn(
-            "rounded-3xl border px-5 py-4 text-[0.95rem] leading-relaxed shadow-md whitespace-pre-line",
-            isUser
-              ? "bg-brand text-brand-ink border-brand/30 rounded-br-xl"
-              : "bg-surface-panel text-ink border-surface-border rounded-bl-xl",
-            message.pending && "opacity-70"
-          )}
-        >
-          {message.content || (message.pending ? "..." : "")}
-        </div>
+    <div className="w-full">
+      <div className={cn("mb-1 text-[10px] font-mono uppercase tracking-wider", isUser ? "text-cyan-400" : "text-yellow-300")}>
+        {isUser ? "Founder:" : "Mentor:"}
+      </div>
+      <div
+        className={cn(
+          "font-mono text-[13px] leading-relaxed whitespace-pre-wrap break-words",
+          isUser ? "text-cyan-300" : "text-green-300",
+          message.pending && "opacity-70"
+        )}
+      >
+        {cleanContent || (message.pending ? "..." : "")}
       </div>
     </div>
   );
