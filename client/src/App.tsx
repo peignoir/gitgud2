@@ -124,7 +124,7 @@ const App = () => {
           {/* Input Pill */}
           <div className="flex-1 bg-[#ceb06d] rounded-xl flex items-center px-3 shadow-lg shadow-amber-900/20 transition-transform active:scale-[0.99]">
             <input
-              className="flex-1 bg-transparent text-[#1a1f29] placeholder-black/65 text-base font-bold outline-none min-w-0"
+              className="flex-1 bg-transparent text-black placeholder-black/80 text-base font-bold outline-none min-w-0"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
