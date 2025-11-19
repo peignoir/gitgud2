@@ -46,7 +46,7 @@ const founderProfileSchema = z
   .partial();
 
 const routerPlanSchema = z.object({
-  mentors: z.array(z.enum(["biz", "fund", "vehicle"])).min(1),
+  mentors: z.array(z.enum(["biz", "fund", "vehicle", "profile"])).min(1),
   reason: z.string().min(1),
   follow_up_question: z.string().optional()
 });
@@ -58,7 +58,8 @@ const researchNotesSchema = z.object({
 });
 
 type MentorLabel = "biz" | "fund" | "vehicle";
-type AgentLabel = MentorLabel | "profile" | "router" | "synth" | "research" | "pdf";
+type RouterAgentLabel = MentorLabel | "profile";
+type AgentLabel = RouterAgentLabel | "router" | "synth" | "research" | "pdf";
 type FounderProfile = z.infer<typeof founderProfileSchema>;
 type RouterPlan = z.infer<typeof routerPlanSchema>;
 type ResearchNotes = z.infer<typeof researchNotesSchema>;
@@ -1350,13 +1351,12 @@ export async function runWorkflow(question: string) {
   }
   const routerPlan = await runRouterDecision(question);
   await runFounderProfiler(question);
-  const mentorsToRun = Array.from(new Set(routerPlan.mentors)) as MentorLabel[];
-  if (mentorsToRun.length === 0) {
-    mentorsToRun.push("biz");
-  }
+  
+  const mentorsToRun = Array.from(new Set(routerPlan.mentors)) as RouterAgentLabel[];
+  const activeMentors = mentorsToRun.filter((m) => m !== "profile") as MentorLabel[];
 
   if (!quietMode) {
-    const planDescription = mentorsToRun.map((label) => mentorNames[label]).join(" → ");
+    const planDescription = mentorsToRun.join(" + ");
     console.log(routerInfoColor(`Router decision: ${planDescription}`));
     console.log(routerInfoColor(`Reason: ${routerPlan.reason}`));
     if (routerPlan.follow_up_question) {
@@ -1366,10 +1366,17 @@ export async function runWorkflow(question: string) {
     console.log(`${formatLabel("router")} ${colorThinking("router", routerPlan.follow_up_question)}`);
   }
 
+  // If ONLY profile update was requested, we don't run any mentor agents.
+  // The Synthesizer will see empty mentor outputs and just confirm the profile update.
+  // If router failed to select any (empty list), fallback to 'biz'
+  if (activeMentors.length === 0 && !mentorsToRun.includes("profile")) {
+    activeMentors.push("biz");
+  }
+
   let bizSummaryBlock = "";
   const mentorOutputs: Partial<Record<MentorLabel, string>> = {};
 
-  for (const mentor of mentorsToRun) {
+  for (const mentor of activeMentors) {
     if (mentor === "biz") {
       announceSection("biz", "YC Business & Growth Mentor");
       const bizInput = buildBusinessInput(question);
@@ -1391,7 +1398,7 @@ export async function runWorkflow(question: string) {
 
   const finalResponse = await runSynthesizer(
     question,
-    { ...routerPlan, mentors: mentorsToRun },
+    { ...routerPlan, mentors: mentorsToRun as any }, // Cast to any to match the schema which expects MentorLabel[]
     mentorOutputs
   );
   await writeLongTermMemory(question, finalResponse);

@@ -69,12 +69,17 @@ const buildDefaultPrompts = (summary: string): Record<PromptKey, string> => ({
     "Always incorporate previous profile information provided in the prompt and update only what changed."
   ].join("\n"),
   router: [
-    "You are the YC Router. Your job is to read the founder's latest question plus the running founder profile and decide which specialist mentors (Business & Growth, Fundraising & Market, US VC Fund & LP Expert) should answer.",
+    "You are the YC Router. Your job is to read the founder's latest question plus the running founder profile and decide which specialist mentors (Business & Growth, Fundraising & Market, US VC Fund & LP Expert) or the Profiler should answer.",
     `Tone + guidance from mentor guide summary: ${summary}`,
     "Steps:",
     "1. Start with a one-sentence 'Router check' line to the founder that confirms your understanding or surfaces a clarification point.",
-    '2. Output a JSON block EXACTLY in this format:\n```json ROUTER_PLAN\n{ "mentors": ["biz", "fund", "vehicle"], "reason": "...", "follow_up_question": "optional" }\n```',
-    "Always include the smallest useful set of mentors. Include multiple only when it materially improves the answer.",
+    '2. Output a JSON block EXACTLY in this format:\n```json ROUTER_PLAN\n{ "mentors": ["biz", "fund", "vehicle", "profile"], "reason": "...", "follow_up_question": "optional" }\n```',
+    "Rules for selection:",
+    "- If the user is ONLY providing personal context (e.g., 'I am a solo founder', 'Update my bio'), select ONLY ['profile'].",
+    "- If the user asks a business/growth question, include 'biz'.",
+    "- If the user asks about fundraising, include 'fund'.",
+    "- If the user asks about structure/legal/LPs, include 'vehicle'.",
+    "- Always include the smallest useful set. Include multiple only when it materially improves the answer.",
     "Use YC tone: concise, confident, focused on action. Reference Startup School resources when relevant."
   ].join("\n"),
   biz: [
@@ -100,6 +105,7 @@ const buildDefaultPrompts = (summary: string): Record<PromptKey, string> => ({
     "You are the final YC mentor voice. You see the founder's question, founder profile, router rationale, and raw outputs from the specialists.",
     `Tone + structure defined by this guide: ${summary}`,
     "Task: craft a single, human YC partner style response that weaves together the best ideas from the specialists without mentioning them explicitly.",
+    "Special Case: If the router selected ONLY ['profile'] and there are no specialist outputs, simply confirm that you've updated the founder's profile with the new information.",
     "Output format:",
     "1) Diagnosis (1–2 sentences)",
     "2) 3 concrete action bullets (can mix execution + fundraising depending on available data)",
