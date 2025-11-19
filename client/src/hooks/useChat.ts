@@ -35,7 +35,8 @@ export function useChat() {
     setMessages((prev) => [...prev, userMessage, assistantPlaceholder]);
     setIsStreaming(true);
 
-    const url = `${API_BASE_URL}/api/stream?question=${encodeURIComponent(question.trim())}`;
+    const userId = localStorage.getItem("gitgud_userid") || "default_user";
+    const url = `${API_BASE_URL}/api/stream?question=${encodeURIComponent(question.trim())}&userId=${encodeURIComponent(userId)}`;
     console.log("[useChat] Connecting to:", url);
     console.log("[useChat] API_BASE_URL:", API_BASE_URL);
 

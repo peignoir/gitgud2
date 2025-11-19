@@ -139,7 +139,8 @@ app.get("/api/health", (_req, res) => {
 
 app.get("/api/stream", async (req, res) => {
   const rawQuestion = (req.query.question as string | undefined) ?? "";
-  const userId = (req.headers["x-user-id"] as string | undefined) ?? "default_user";
+  // Support both header (ideal) and query param (for EventSource limitation)
+  const userId = (req.headers["x-user-id"] as string) || (req.query.userId as string) || "default_user";
   const question = rawQuestion.trim();
 
   if (!question) {
