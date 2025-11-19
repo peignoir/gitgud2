@@ -1,104 +1,86 @@
-import React, { useEffect, useRef, useState } from "react";
-import { useChat } from "@/hooks/useChat";
-import MessageBubble from "@/components/MessageBubble";
-import { cn } from "@/lib/utils";
+import React, { useEffect, useRef } from "react";
+import { useChat } from "../hooks/useChat";
+import MessageBubble from "./MessageBubble";
 
 interface ProfileStepProps {
+  userId: string;
   onComplete: () => void;
 }
 
-export const ProfileStep: React.FC<ProfileStepProps> = ({ onComplete }) => {
-  const { messages, sendMessage, isStreaming } = useChat();
-  const [input, setInput] = useState("");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [isProfileComplete, setIsProfileComplete] = useState(false);
+export const ProfileStep: React.FC<ProfileStepProps> = ({ userId, onComplete }) => {
+  // We use the chat hook but with a specific seed message for the Profiler
+  const { messages, isStreaming, sendMessage } = useChat(userId);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-start the conversation
+  // Auto-scroll
   useEffect(() => {
-    if (messages.length === 1 && messages[0].id === "seed") {
-      // We override the seed behavior for this specific step
-      sendMessage("Hi, I'm ready to build my profile. Who are you?");
-    }
-  }, []);
-
-  // Scroll to bottom
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Check if the AI thinks we are done (heuristic for now, later explicit signal)
+  // Initial greeting if empty
   useEffect(() => {
-    const lastMsg = messages[messages.length - 1];
-    if (lastMsg?.role === "assistant" && !isStreaming) {
-      // In a real implementation, the agent would emit a structured signal.
-      // For now, we simulate "Complete" if the user clicks a button, or we can parse text.
-      // Let's just show a "Continue" button if conversation > 5 messages.
-      if (messages.length > 5) {
-        setIsProfileComplete(true);
-      }
+    if (messages.length === 0) {
+      sendMessage("Introduce yourself and start the interview. I am ready to build my founder profile.");
     }
-  }, [messages, isStreaming]);
+  }, [messages.length, sendMessage]);
 
-  const handleSubmit = () => {
-    const val = input.trim();
-    if (!val || isStreaming) return;
-    sendMessage(val);
-    setInput("");
+  const handleSend = async () => {
+    if (!inputRef.current?.value.trim() || isStreaming) return;
+    const text = inputRef.current.value;
+    inputRef.current.value = "";
+    await sendMessage(text);
   };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  // Debug: Check if profile is "complete" by looking for a signal in the messages
+  // In a real app, the backend would send a specific event, but for now we can adds a "manual" next button
+  // or look for keywords. We'll add a manual "I'm done" button for this MVP phase.
 
   return (
     <div className="flex flex-col h-full">
-      {/* Goal Header */}
-      <div className="shrink-0 px-6 py-4 bg-white/5 border-b border-white/10">
-        <h2 className="text-lg font-bold text-white">Step 1: Identity</h2>
-        <p className="text-sm text-gray-400">
-          I need to understand your background, superpowers, and ambition.
-        </p>
-      </div>
-
-      {/* Chat */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-        {messages.slice(1).map((msg) => ( // Skip the hidden seed
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-20">
+        {messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} />
         ))}
-        {isStreaming && (
-          <div className="text-xs text-yellow-500/50 animate-pulse ml-2">
-            [Profiler] analyzing...
-          </div>
-        )}
-        <div ref={messagesEndRef} />
+        <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
-      <div className="shrink-0 p-4 border-t border-white/10 bg-[#0e111b]">
-        {isProfileComplete ? (
-          <button
-            onClick={onComplete}
-            className="w-full bg-yellow-400 text-black font-bold py-4 rounded-xl hover:bg-yellow-300 transition-all shadow-[0_0_20px_rgba(250,204,21,0.3)]"
+      <div className="p-4 bg-[#0e111b] border-t border-white/10">
+        <div className="flex gap-2 mb-2">
+           <button 
+             onClick={onComplete}
+             className="text-[10px] uppercase tracking-wider text-gray-500 hover:text-white transition-colors ml-auto"
+           >
+             [Debug: Skip to Next Step]
+           </button>
+        </div>
+        <div className="flex items-center gap-2 bg-white/5 rounded-lg px-4 py-2 border border-white/10 focus-within:border-yellow-400/50 transition-colors">
+          <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
+          <input
+            ref={inputRef}
+            onKeyDown={handleKeyDown}
+            type="text"
+            placeholder="Type your answer..."
+            className="flex-1 bg-transparent text-white placeholder-gray-600 outline-none min-w-0"
+            autoComplete="off"
+            style={{ WebkitTextFillColor: "#fff" }} // Force white text on iOS
+          />
+          <button 
+            onClick={handleSend}
+            disabled={isStreaming}
+            className="text-yellow-400 font-bold disabled:opacity-50"
           >
-            Profile Looks Good -> Next Step
+            SEND
           </button>
-        ) : (
-          <div className="flex gap-2">
-            <input
-              className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-400/50"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-              placeholder="Type your answer..."
-              disabled={isStreaming}
-            />
-            <button
-              onClick={handleSubmit}
-              disabled={!input.trim() || isStreaming}
-              className="px-6 bg-white text-black font-bold rounded-xl disabled:opacity-50"
-            >
-              Send
-            </button>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );
 };
-
