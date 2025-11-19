@@ -16,18 +16,18 @@ const MessageBubble = memo(({ message }: MessageBubbleProps) => {
   const cleanContent = stripAnsi(message.content || "");
 
   return (
-    <div className="w-full">
-      <div className={cn("mb-1 text-[10px] font-mono uppercase tracking-wider", isUser ? "text-cyan-400" : "text-yellow-300")}>
-        {isUser ? "Founder:" : "Mentor:"}
+    <div className="w-full py-2">
+      <div className={cn("mb-1 text-[10px] font-mono uppercase tracking-wider opacity-60", isUser ? "text-cyan-400" : "text-amber-400")}>
+        {isUser ? "Founder" : "GitGud Mentor"}
       </div>
       <div
         className={cn(
-          "font-mono text-[13px] leading-relaxed whitespace-pre-wrap break-words",
-          isUser ? "text-cyan-300" : "text-green-300",
+          "font-mono text-sm leading-relaxed whitespace-pre-wrap break-words",
+          isUser ? "text-cyan-100" : "text-white/90",
           message.pending && "opacity-70"
         )}
       >
-        {cleanContent || (message.pending ? "..." : "")}
+        {cleanContent || (message.pending ? <span className="animate-pulse">...</span> : "")}
       </div>
     </div>
   );
@@ -36,4 +36,3 @@ const MessageBubble = memo(({ message }: MessageBubbleProps) => {
 MessageBubble.displayName = "MessageBubble";
 
 export default MessageBubble;
-
