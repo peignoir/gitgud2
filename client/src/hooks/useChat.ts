@@ -35,10 +35,15 @@ export function useChat() {
     setMessages((prev) => [...prev, userMessage, assistantPlaceholder]);
     setIsStreaming(true);
 
-    const src = new EventSource(`${API_BASE_URL}/api/stream?question=${encodeURIComponent(question.trim())}`);
+    const url = `${API_BASE_URL}/api/stream?question=${encodeURIComponent(question.trim())}`;
+    console.log("[useChat] Connecting to:", url);
+    console.log("[useChat] API_BASE_URL:", API_BASE_URL);
+
+    const src = new EventSource(url);
     sourceRef.current = src;
 
     src.addEventListener("chunk", (event) => {
+      console.log("[useChat] Received chunk:", event);
       const data = JSON.parse((event as MessageEvent).data) as { chunk?: string };
       if (!data.chunk) {
         return;
@@ -52,6 +57,7 @@ export function useChat() {
     });
 
     const finalize = () => {
+      console.log("[useChat] Stream finalized");
       setMessages((prev) => {
         const next = [...prev];
         const last = next[next.length - 1];
@@ -63,9 +69,14 @@ export function useChat() {
       sourceRef.current = null;
     };
 
-    src.addEventListener("done", finalize);
+    src.addEventListener("done", () => {
+      console.log("[useChat] Stream done");
+      finalize();
+    });
+
     src.addEventListener("error", (event) => {
-      console.error("stream error", event);
+      console.error("[useChat] Stream error:", event);
+      console.error("[useChat] EventSource readyState:", src.readyState);
       setMessages((prev) => {
         const next = [...prev];
         const last = next[next.length - 1];
