@@ -82,7 +82,7 @@ const App = () => {
       <header className="shrink-0 flex items-center justify-between border-b border-white/10 bg-[#1a1f29] px-4 py-3 safe-top">
         <div>
           <div className="text-[10px] uppercase tracking-[0.3em] text-amber-400/80 font-bold">GitGud.vc</div>
-          <div className="text-xs text-white/60">YC Mentor Console</div>
+          <div className="text-xs text-white/60" aria-hidden="true" />
         </div>
         <div className="flex items-center gap-2">
            {/* Status Indicator */}
