@@ -91,31 +91,31 @@ const App = () => {
       </header>
 
       {/* Main Chat Area */}
-      <main className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth">
-        {messages.length === 0 && !uploadStatus ? (
-          <div className="flex h-full flex-col items-center justify-center opacity-40 space-y-4">
-            <div className="h-16 w-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-2xl">
-              🚀
-            </div>
-            <div className="text-center space-y-1">
-              <p className="text-sm font-bold">Ready to build</p>
-              <p className="text-xs">Ask about fundraising, growth, or vehicles.</p>
-            </div>
-          </div>
-        ) : (
-          <>
-            {messages.map((msg) => (
-              <MessageBubble key={msg.id} message={msg} />
-            ))}
-            {uploadStatus && (
-               <div className="py-2">
-                 <div className="text-[10px] font-mono uppercase tracking-wider text-amber-400 opacity-60 mb-1">System</div>
-                 <div className="font-mono text-sm text-amber-200/80 italic">{uploadStatus}</div>
-               </div>
+      <main className="flex-1 px-4 py-4 min-h-0">
+        <div className="flex h-full flex-col rounded-3xl border border-white/10 bg-[#0f131f] shadow-[0_25px_55px_rgba(0,0,0,0.45)]">
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 scroll-smooth">
+            {messages.length === 0 && !uploadStatus ? (
+              <div className="flex h-full flex-col items-center justify-center space-y-4 text-center text-white/60">
+                <div className="text-xs font-semibold uppercase tracking-[0.5em] text-amber-200/80">Console Ready</div>
+                <p className="font-mono text-base text-white/85">Ask about LP outreach, vehicle design, or YC-style execution.</p>
+                <p className="text-xs text-white/50">Use “/” for commands • “+” to add PDFs.</p>
+              </div>
+            ) : (
+              <>
+                {messages.map((msg) => (
+                  <MessageBubble key={msg.id} message={msg} />
+                ))}
+                {uploadStatus && (
+                  <div className="py-2">
+                    <div className="text-[10px] font-mono uppercase tracking-wider text-amber-400 opacity-70 mb-1">System</div>
+                    <div className="font-mono text-sm text-amber-200/80 italic">{uploadStatus}</div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} className="h-4" />
+              </>
             )}
-            <div ref={messagesEndRef} className="h-4" />
-          </>
-        )}
+          </div>
+        </div>
       </main>
 
       {/* Footer / Input Area */}
@@ -124,7 +124,7 @@ const App = () => {
           {/* Input Pill */}
           <div className="flex-1 bg-[#ceb06d] rounded-xl flex items-center px-3 shadow-lg shadow-amber-900/20 transition-transform active:scale-[0.99]">
             <input
-              className="flex-1 bg-transparent text-black placeholder-black/80 text-base font-bold outline-none min-w-0"
+              className="flex-1 bg-transparent text-[#1c1304] placeholder-[#5f4a26] text-base font-semibold outline-none min-w-0 tracking-wide"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}

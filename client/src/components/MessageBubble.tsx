@@ -1,77 +1,87 @@
 import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@/hooks/useChat";
-import { memo, useMemo } from "react";
+import { Fragment, memo, useMemo } from "react";
 
 type MessageBubbleProps = {
   message: ChatMessage;
 };
 
-// Enhanced ANSI parser for the specific colors used in this app
-const parseAnsi = (text: string) => {
-  // Split by ANSI escape codes
-  const parts = text.split(/(\x1b\[[0-9;]*m)/g);
-  const result: React.ReactNode[] = [];
-  let currentColor = "text-white/90";
-  let isBold = false;
-  let isDim = false;
+const LABEL_REGEX = /\[(profile|router|biz|fund|vehicle|mentor|research|pdf)\]/gi;
 
-  // Map ANSI codes to Tailwind classes
-  const colorMap: Record<string, string> = {
-    "30": "text-zinc-500",
-    "31": "text-red-400",
-    "32": "text-green-400", // Profile
-    "33": "text-yellow-300", // Router
-    "34": "text-blue-400", // Vehicle
-    "35": "text-pink-400", // Fund
-    "36": "text-cyan-400", // Biz
-    "37": "text-zinc-300",
-    "90": "text-zinc-500",
-    "94": "text-blue-300", // Research (Bright Blue)
-    "96": "text-cyan-300", // PDF (Bright Cyan)
-  };
+const LABEL_CLASS_MAP: Record<string, string> = {
+  profile: "text-green-300",
+  router: "text-yellow-300",
+  biz: "text-cyan-200",
+  fund: "text-pink-300",
+  vehicle: "text-blue-300",
+  mentor: "text-white",
+  synth: "text-white",
+  research: "text-sky-300",
+  pdf: "text-cyan-300",
+};
 
-  parts.forEach((part, i) => {
-    if (part.startsWith("\x1b[")) {
-      // Parse code
-      const codes = part.match(/\d+/g);
-      if (codes) {
-        for (let j = 0; j < codes.length; j++) {
-          const code = codes[j];
-          if (code === "0") {
-            currentColor = "text-white/90";
-            isBold = false;
-            isDim = false;
-          } else if (code === "1") {
-            isBold = true;
-          } else if (code === "2") {
-            isDim = true;
-          } else if (code === "38" && codes[j + 1] === "5" && codes[j + 2] === "208") {
-            // Special case for Router Info (Orange) \x1b[38;5;208m
-            currentColor = "text-orange-400";
-            j += 2; // Skip next two args
-          } else if (colorMap[code]) {
-            currentColor = colorMap[code];
-          }
-        }
-      }
-    } else if (part) {
-      result.push(
-        <span key={i} className={cn(currentColor, isBold && "font-bold", isDim && "opacity-60")}>
-          {part}
-        </span>
-      );
+const ROUTER_INFO_PREFIXES = ["Router decision:", "Reason:", "Router follow-up:", "Router check:"];
+
+const colorizeLabels = (text: string) => {
+  const fragments: React.ReactNode[] = [];
+  let match: RegExpExecArray | null;
+  let lastIndex = 0;
+
+  LABEL_REGEX.lastIndex = 0;
+  while ((match = LABEL_REGEX.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      fragments.push(text.slice(lastIndex, match.index));
     }
-  });
 
-  return result;
+    const normalized = match[1].toLowerCase();
+    fragments.push(
+      <span key={`${match.index}-${match[0]}`} className={cn("font-semibold", LABEL_CLASS_MAP[normalized] ?? "text-amber-300")}>
+        {match[0]}
+      </span>
+    );
+
+    lastIndex = LABEL_REGEX.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    fragments.push(text.slice(lastIndex));
+  }
+
+  return fragments;
+};
+
+const renderConsoleText = (text: string) => {
+  const lines = text.split("\n");
+
+  return lines.map((line, idx) => {
+    const trimmed = line.trimStart();
+    const isRouterMeta = ROUTER_INFO_PREFIXES.some((prefix) => trimmed.startsWith(prefix));
+    const isCodeFence = trimmed.startsWith("```");
+    const lineClass = cn(
+      isRouterMeta && "text-orange-300",
+      isCodeFence && "text-amber-200",
+      !isRouterMeta && !isCodeFence && "text-white/90"
+    );
+
+    const content = colorizeLabels(line);
+
+    return (
+      <Fragment key={`${line}-${idx}`}>
+        <span className={lineClass}>{content}</span>
+        {idx < lines.length - 1 && <br />}
+      </Fragment>
+    );
+  });
 };
 
 const MessageBubble = memo(({ message }: MessageBubbleProps) => {
   const isUser = message.role === "user";
-  
+
   const content = useMemo(() => {
-    if (isUser) return message.content;
-    return parseAnsi(message.content || "");
+    if (isUser) {
+      return message.content;
+    }
+    return renderConsoleText(message.content || "");
   }, [message.content, isUser]);
 
   return (
