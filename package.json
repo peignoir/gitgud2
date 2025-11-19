@@ -6,15 +6,14 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx src/ycMentorConsole.ts",
-    "start": "node dist/server.js",
+    "start": "tsx src/server.ts",
     "api": "tsx src/server.ts",
     "client": "vite",
     "mobile": "vite --config vite.mobile.config.ts",
     "web": "concurrently \"npm run api\" \"npm run client\"",
     "build": "tsc",
     "build:web": "vite build",
-    "build:mobile": "vite build --config vite.mobile.config.ts",
-    "heroku-postbuild": "npm run build"
+    "build:mobile": "vite build --config vite.mobile.config.ts"
   },
   "keywords": [],
   "author": "",
@@ -41,6 +40,7 @@
     "react-qr-code": "^2.0.18",
     "tailwind-merge": "^2.4.0",
     "ts-node": "^10.9.2",
+    "tsx": "^4.15.7",
     "typescript": "^5.9.3",
     "xterm": "^5.3.0",
     "zod": "^4.1.12"
@@ -58,7 +58,6 @@
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.14",
     "tailwindcss-animate": "^1.0.7",
-    "tsx": "^4.15.7",
     "vite": "^5.4.10",
     "vite-plugin-pwa": "^0.20.5"
   }
