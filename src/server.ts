@@ -170,6 +170,7 @@ app.get("/api/stream", async (req, res) => {
     res.write(`event: done\ndata: {"success":true}\n\n`);
     res.end();
   }).catch((error: unknown) => {
+    console.error("[API Error]", error);
     const message = error instanceof Error ? error.message : String(error);
     send("error", { message });
     res.end();

@@ -77,13 +77,26 @@ export function useChat() {
     src.addEventListener("error", (event) => {
       console.error("[useChat] Stream error:", event);
       console.error("[useChat] EventSource readyState:", src.readyState);
+      
+      let errorMessage = "Hmm, the backend had an issue. Try again in a second.";
+      if ((event as MessageEvent).data) {
+        try {
+          const data = JSON.parse((event as MessageEvent).data);
+          if (data.message) {
+            errorMessage = `Server Error: ${data.message}`;
+          }
+        } catch (e) {
+          console.warn("Failed to parse error data:", e);
+        }
+      }
+
       setMessages((prev) => {
         const next = [...prev];
         const last = next[next.length - 1];
         next[next.length - 1] = {
           id: crypto.randomUUID(),
           role: "assistant",
-          content: "Hmm, the backend had an issue. Try again in a second."
+          content: errorMessage
         };
         return next;
       });
