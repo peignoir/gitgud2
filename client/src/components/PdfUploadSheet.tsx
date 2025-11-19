@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Upload } from "lucide-react";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
+
 export const PdfUploadSheet = () => {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -17,7 +19,7 @@ export const PdfUploadSheet = () => {
     const formData = new FormData();
     formData.append("file", file);
     try {
-      const res = await fetch("/api/files/pdf", { method: "POST", body: formData });
+      const res = await fetch(`${API_BASE_URL}/api/files/pdf`, { method: "POST", body: formData });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         throw new Error(data?.error || "Upload failed");

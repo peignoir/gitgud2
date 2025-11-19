@@ -1,12 +1,6 @@
 {
   "buildCommand": "npm run build:mobile",
-  "outputDirectory": "dist-client",
-  "framework": "vite",
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "https://YOUR-API-DOMAIN.example.com/api/$1"
-    }
-  ]
+  "outputDirectory": "dist",
+  "framework": "vite"
 }
 

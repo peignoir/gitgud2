@@ -6,13 +6,15 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx src/ycMentorConsole.ts",
-    "start": "npm run dev",
+    "start": "node dist/server.js",
     "api": "tsx src/server.ts",
     "client": "vite",
     "mobile": "vite --config vite.mobile.config.ts",
     "web": "concurrently \"npm run api\" \"npm run client\"",
+    "build": "tsc",
     "build:web": "vite build",
-    "build:mobile": "vite build --config vite.mobile.config.ts"
+    "build:mobile": "vite build --config vite.mobile.config.ts",
+    "heroku-postbuild": "npm run build"
   },
   "keywords": [],
   "author": "",

@@ -13,6 +13,8 @@ const seedMessage: ChatMessage = {
   content: "Hey founder! Drop a question about fundraising, vehicles, or YC style execution."
 };
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
+
 export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([seedMessage]);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -33,7 +35,7 @@ export function useChat() {
     setMessages((prev) => [...prev, userMessage, assistantPlaceholder]);
     setIsStreaming(true);
 
-    const src = new EventSource(`/api/stream?question=${encodeURIComponent(question.trim())}`);
+    const src = new EventSource(`${API_BASE_URL}/api/stream?question=${encodeURIComponent(question.trim())}`);
     sourceRef.current = src;
 
     src.addEventListener("chunk", (event) => {
