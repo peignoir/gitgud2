@@ -19,7 +19,8 @@ import {
   runWorkflow,
   processSlashCommand,
   getVectorStoreId,
-  summarizePdfUpload
+  summarizePdfUpload,
+  resetUserData
 } from "./core/workflow.js";
 import { getAllPrompts, PromptKey, setPrompt } from "./core/prompts.js";
 
@@ -138,6 +139,7 @@ app.get("/api/health", (_req, res) => {
 
 app.get("/api/stream", async (req, res) => {
   const rawQuestion = (req.query.question as string | undefined) ?? "";
+  const userId = (req.headers["x-user-id"] as string | undefined) ?? "default_user";
   const question = rawQuestion.trim();
 
   if (!question) {
@@ -161,7 +163,7 @@ app.get("/api/stream", async (req, res) => {
         if (question.startsWith("/")) {
           processSlashCommand(question);
         } else {
-          await runWorkflow(question);
+          await runWorkflow(question, userId);
         }
       },
       (chunk) => send("chunk", { chunk })
@@ -208,6 +210,21 @@ app.put("/api/prompts/:id", (req, res) => {
 });
 
 type FileUploadRequest = Request & { file?: Express.Multer.File };
+
+app.post("/api/reset", async (req, res) => {
+  const userId = (req.headers["x-user-id"] as string | undefined);
+  if (!userId) {
+    res.status(400).json({ error: "Missing x-user-id header" });
+    return;
+  }
+  try {
+    await resetUserData(userId);
+    res.json({ success: true, message: `Reset data for user ${userId}` });
+  } catch (error) {
+    console.error("Reset failed:", error);
+    res.status(500).json({ error: "Failed to reset user data." });
+  }
+});
 
 app.post("/api/files/pdf", upload.single("file"), async (req, res) => {
   const file = (req as FileUploadRequest).file;

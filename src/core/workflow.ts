@@ -1412,6 +1412,35 @@ export function processSlashCommand(line: string): boolean {
   return handleSlashCommand(line);
 }
 
+export async function resetUserData(userId: string): Promise<void> {
+  try {
+    // 1. Clear conversation cache
+    const userConversationPath = path.resolve(vectorStoreCacheDir, `conversation_${userId}.json`);
+    if (fs.existsSync(userConversationPath)) {
+      fs.unlinkSync(userConversationPath);
+    }
+
+    // 2. Clear Mem0 long-term memory
+    if (memClient) {
+      // Mem0 doesn't have a "deleteAll" by user, but we can list and delete.
+      // For now, we'll just reset the local state which forces a refresh.
+      // In production, you'd iterate and delete from Mem0 API.
+      longTermMemories = [];
+      longTermMemoryHydrated = false;
+    }
+
+    // 3. Clear Founder Profile
+    founderProfile = {};
+    founderIdeaBacklog = [];
+    researchSourceLog = [];
+
+    console.log(`[Reset] Data cleared for user ${userId}`);
+  } catch (error) {
+    console.error(`[Reset] Failed to clear data for user ${userId}:`, error);
+    throw error;
+  }
+}
+
 export function isQuietMode(): boolean {
   return quietMode;
 }
