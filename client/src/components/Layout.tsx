@@ -88,7 +88,7 @@ export const Layout: React.FC<LayoutProps> = ({
       </div>
 
       {/* Content below fixed header */}
-      <div className="flex flex-col flex-1" style={{paddingTop: "160px"}}> {/* Approximate header height */}
+      <div className="flex flex-col flex-1 pt-[200px]"> {/* Space for fixed header */}
         {hero && (
           <section className="border-b border-white/5">{hero}</section>
         )}

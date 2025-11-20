@@ -176,7 +176,14 @@ const MessageBubble = memo(({ message, showDebug = false }: MessageBubbleProps) 
     
     // Filter out debug/thinking content if showDebug is false
     if (!showDebug) {
-      const lines = messageContent.split('\n');
+      let filteredContent = messageContent;
+      
+      // Remove entire JSON blocks (multiline)
+      filteredContent = filteredContent.replace(/```json[^`]*```/gs, '');
+      filteredContent = filteredContent.replace(/\{[^}]*"founder"[^}]*\}[^}]*\}/gs, '');
+      
+      // Filter line by line
+      const lines = filteredContent.split('\n');
       const filteredLines = lines.filter(line => {
         const stripped = stripAnsi(line).trim();
         
@@ -188,9 +195,19 @@ const MessageBubble = memo(({ message, showDebug = false }: MessageBubbleProps) 
         if (stripped.includes('thinking...') || stripped.includes('[research]') || 
             stripped.includes('[profile]') || stripped.match(/\[.*\]\s*thinking/i)) return false;
         
-        // Hide JSON blocks (they're usually debug info)
-        if (stripped.startsWith('```json') || stripped.includes('FOUNDER_PROFILE') ||
-            stripped.includes('IDEATION_RESULTS') || stripped.includes('SPRINT_PLAN')) return false;
+        // Hide agent headers
+        if (stripped.match(/===.*===/)) return false;
+        
+        // Hide JSON-related lines
+        if (stripped.includes('FOUNDER_PROFILE') || stripped.includes('IDEATION_RESULTS') || 
+            stripped.includes('SPRINT_PLAN') || stripped.includes('"founder"') ||
+            stripped.includes('"background"') || stripped.includes('"stage"') ||
+            stripped.includes('"motivations"') || stripped.includes('"strengths"') ||
+            stripped.includes('"gaps"') || stripped.includes('"working_style"') ||
+            stripped.includes('"goals"') || stripped.includes('"notes"')) return false;
+        
+        // Hide lines that are just braces or commas
+        if (stripped.match(/^[{},\s]*$/)) return false;
         
         return true;
       });
