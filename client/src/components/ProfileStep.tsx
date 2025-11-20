@@ -5,11 +5,13 @@ import MessageBubble from "./MessageBubble";
 interface ProfileStepProps {
   userId: string;
   onComplete: () => void;
+  flowId?: string;
+  overrideSeed?: string;
 }
 
-export const ProfileStep: React.FC<ProfileStepProps> = ({ userId, onComplete }) => {
+export const ProfileStep: React.FC<ProfileStepProps> = ({ userId, onComplete, flowId, overrideSeed }) => {
   // We use the chat hook but with a specific seed message for the Profiler
-  const { messages, isStreaming, sendMessage } = useChat(userId);
+  const { messages, isStreaming, sendMessage } = useChat(userId, flowId);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -21,9 +23,9 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({ userId, onComplete }) 
   // Initial greeting if empty
   useEffect(() => {
     if (messages.length === 0) {
-      sendMessage("Introduce yourself and start the interview. I am ready to build my founder profile.");
+      sendMessage(overrideSeed || "Introduce yourself and start the interview. I am ready to build my founder profile.");
     }
-  }, [messages.length, sendMessage]);
+  }, [messages.length, sendMessage, overrideSeed]);
 
   const handleSend = async () => {
     if (!inputRef.current?.value.trim() || isStreaming) return;
@@ -74,8 +76,8 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({ userId, onComplete }) 
           />
           <button 
             onClick={handleSend}
-            disabled={isStreaming}
-            className="text-yellow-400 font-bold disabled:opacity-50"
+            disabled={!inputRef.current?.value && isStreaming}
+            className={`font-bold transition-colors ${!inputRef.current?.value && isStreaming ? "text-gray-600 cursor-not-allowed" : "text-yellow-400 hover:text-yellow-300"}`}
           >
             SEND
           </button>

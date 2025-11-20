@@ -22,7 +22,9 @@ const cwd = process.cwd();
 const mentorGuidePath = path.resolve(cwd, "docs", "yc_mentor_guide.md");
 const vectorStoreCacheDir = path.resolve(cwd, ".cache");
 const vectorStoreCachePath = path.resolve(vectorStoreCacheDir, "yc_vector_store.json");
-const conversationCachePath = path.resolve(vectorStoreCacheDir, `conversation_${process.env.USER_ID ?? "default_user"}.json`);
+
+// IMPORTANT: The userId is now dynamic per request, so we can't rely on process.env.USER_ID globally
+// for path generation that happens at module level. We'll generate conversation paths dynamically.
 
 const summarySchema = z.object({
   stage: z.string().min(1),
@@ -167,8 +169,13 @@ function saveCachedVectorStoreId(vectorStoreId: string) {
   }
 }
 
-function loadConversationIdFromCache(): string | null {
+function getConversationPath(userId: string): string {
+  return path.resolve(vectorStoreCacheDir, `conversation_${userId}.json`);
+}
+
+function loadConversationIdFromCache(userId: string): string | null {
   try {
+    const conversationCachePath = getConversationPath(userId);
     if (!fs.existsSync(conversationCachePath)) {
       return null;
     }
@@ -183,17 +190,19 @@ function loadConversationIdFromCache(): string | null {
   return null;
 }
 
-function saveConversationIdToCache(conversationId: string) {
+function saveConversationIdToCache(userId: string, conversationId: string) {
   try {
     ensureCacheDir();
+    const conversationCachePath = getConversationPath(userId);
     fs.writeFileSync(conversationCachePath, JSON.stringify({ conversationId }, null, 2), "utf8");
   } catch (error) {
     console.warn("Failed to persist conversation cache:", error);
   }
 }
 
-function clearConversationCache() {
+function clearConversationCache(userId: string) {
   try {
+    const conversationCachePath = getConversationPath(userId);
     if (fs.existsSync(conversationCachePath)) {
       fs.unlinkSync(conversationCachePath);
     }
@@ -269,7 +278,6 @@ const apiKey = process.env.OPENAI_API_KEY;
 const mentorFileId = process.env.YC_MENTOR_FILE_ID;
 const mem0ApiKey = process.env.MEM0_API_KEY;
 const tavilyApiKey = process.env.TAVILY_API_KEY;
-const userId = process.env.USER_ID ?? "demo_user";
 
 if (!apiKey) {
   console.error("Missing OPENAI_API_KEY. Please set it before running the workflow.");
@@ -318,17 +326,39 @@ let founderProfiler: Agent;
 let routerAgent: Agent;
 let synthesizerAgent: Agent;
 let researchAgent: Agent;
-let founderProfile: FounderProfile = {};
-let founderIdeaBacklog: string[] = [];
-let researchSourceLog: string[] = [];
-let longTermMemories: string[] = [];
-let longTermMemoryHydrated = false;
-let conversationSession: OpenAIConversationsSession | null = null;
-let mentorsInitialized = false;
+
+// Per-user state management
+// Ideally this should be in a proper database or key-value store.
+// For now, we will use in-memory maps keyed by userId.
+const userStateMap = new Map<string, {
+  founderProfile: FounderProfile;
+  founderIdeaBacklog: string[];
+  researchSourceLog: string[];
+  longTermMemories: string[];
+  longTermMemoryHydrated: boolean;
+  conversationSession: OpenAIConversationsSession | null;
+}>();
 
 const LONG_TERM_MEMORY_LIMIT = 50;
 const IDEA_BACKLOG_LIMIT = 20;
 const RESEARCH_SOURCE_LIMIT = 20;
+
+function getUserState(userId: string) {
+  if (!userStateMap.has(userId)) {
+    userStateMap.set(userId, {
+      founderProfile: {},
+      founderIdeaBacklog: [],
+      researchSourceLog: [],
+      longTermMemories: [],
+      longTermMemoryHydrated: false,
+      conversationSession: null
+    });
+  }
+  return userStateMap.get(userId)!;
+}
+
+let mentorsInitialized = false;
+
 
 function summarizeGuide(text: string): string {
   const normalized = text.replace(/\s+/g, " ").trim();
@@ -373,21 +403,23 @@ function extractFounderProfile(text: string): FounderProfile | null {
   }
 }
 
-function mergeFounderProfile(update: FounderProfile | null) {
+function mergeFounderProfile(userId: string, update: FounderProfile | null) {
   if (!update) {
     return;
   }
 
-  founderProfile = {
-    ...founderProfile,
+  const state = getUserState(userId);
+  state.founderProfile = {
+    ...state.founderProfile,
     ...Object.fromEntries(
       Object.entries(update).filter(([, value]) => value !== undefined && value !== null && `${value}`.trim() !== "")
     )
   };
 }
 
-function founderProfileSnapshot(): string {
-  return Object.keys(founderProfile).length > 0 ? JSON.stringify(founderProfile, null, 2) : "(no founder profile yet)";
+function founderProfileSnapshot(userId: string): string {
+  const state = getUserState(userId);
+  return Object.keys(state.founderProfile).length > 0 ? JSON.stringify(state.founderProfile, null, 2) : "(no founder profile yet)";
 }
 
 function trimList(list: string[], limit: number) {
@@ -396,26 +428,29 @@ function trimList(list: string[], limit: number) {
   }
 }
 
-function longTermMemorySnapshot(limit = 10): string {
-  if (!longTermMemories.length) {
+function longTermMemorySnapshot(userId: string, limit = 10): string {
+  const state = getUserState(userId);
+  if (!state.longTermMemories.length) {
     return "(no long-term memories yet)";
   }
-  const recent = longTermMemories.slice(-limit);
+  const recent = state.longTermMemories.slice(-limit);
   return recent.map((memory, index) => `${index + 1}. ${memory}`).join("\n");
 }
 
-function formattedIdeaBacklog(): string {
-  if (!founderIdeaBacklog.length) {
+function formattedIdeaBacklog(userId: string): string {
+  const state = getUserState(userId);
+  if (!state.founderIdeaBacklog.length) {
     return "(no idea backlog entries)";
   }
-  return founderIdeaBacklog.map((idea, index) => `${index + 1}. ${idea}`).join("\n");
+  return state.founderIdeaBacklog.map((idea, index) => `${index + 1}. ${idea}`).join("\n");
 }
 
-function formattedResearchSources(): string {
-  if (!researchSourceLog.length) {
+function formattedResearchSources(userId: string): string {
+  const state = getUserState(userId);
+  if (!state.researchSourceLog.length) {
     return "(no research sources yet)";
   }
-  return researchSourceLog.map((source, index) => `${index + 1}. ${source}`).join("\n");
+  return state.researchSourceLog.map((source, index) => `${index + 1}. ${source}`).join("\n");
 }
 
 type TavilyParameters = {
@@ -594,7 +629,7 @@ const mentorNames: Record<MentorLabel, string> = {
   vehicle: "US VC Fund & LP Expert"
 };
 
-function routeMentors(question: string): MentorLabel[] {
+function routeMentors(userId: string, question: string): MentorLabel[] {
   const text = question.toLowerCase();
   const matches = (keywords: string[]) => keywords.some((kw) => text.includes(kw));
 
@@ -602,7 +637,7 @@ function routeMentors(question: string): MentorLabel[] {
   let wantsFund = matches(ROUTER_KEYWORDS.fund);
   let wantsVehicle = matches(ROUTER_KEYWORDS.vehicle);
 
-  const profileText = founderProfileSnapshot().toLowerCase();
+  const profileText = founderProfileSnapshot(userId).toLowerCase();
   if (!wantsFund && /raise|fund|investor|runway|seed|fundraising/.test(profileText)) {
     wantsFund = true;
   }
@@ -636,63 +671,63 @@ function routeMentors(question: string): MentorLabel[] {
   return plan;
 }
 
-function buildBusinessInput(question: string): string {
+function buildBusinessInput(userId: string, question: string): string {
   return [
     "Founder question:",
     question,
     "",
     "Founder profile snapshot (JSON):",
-    founderProfileSnapshot(),
+    founderProfileSnapshot(userId),
     "",
     "Long-term memory snapshot:",
-    longTermMemorySnapshot(),
+    longTermMemorySnapshot(userId),
     "",
     "Founder idea backlog:",
-    formattedIdeaBacklog(),
+    formattedIdeaBacklog(userId),
     "",
     "Recent research sources:",
-    formattedResearchSources()
+    formattedResearchSources(userId)
   ].join("\n");
 }
 
-function buildFundraisingInput(question: string, bizSummary: string): string {
+function buildFundraisingInput(userId: string, question: string, bizSummary: string): string {
   return [
     "Founder question:",
     question,
     "",
     "Founder profile snapshot (JSON):",
-    founderProfileSnapshot(),
+    founderProfileSnapshot(userId),
     "",
     "Long-term memory snapshot:",
-    longTermMemorySnapshot(),
+    longTermMemorySnapshot(userId),
     "",
     "Founder idea backlog:",
-    formattedIdeaBacklog(),
+    formattedIdeaBacklog(userId),
     "",
     "Recent research sources:",
-    formattedResearchSources(),
+    formattedResearchSources(userId),
     "",
     "Summary from Business & Growth Mentor (stage, traction, bottleneck, focus):",
     bizSummary || "(business mentor not run yet; infer from founder question and profile)"
   ].join("\n");
 }
 
-function buildVehicleInput(question: string, bizSummary: string): string {
+function buildVehicleInput(userId: string, question: string, bizSummary: string): string {
   return [
     "Founder question:",
     question,
     "",
     "Founder profile snapshot (JSON):",
-    founderProfileSnapshot(),
+    founderProfileSnapshot(userId),
     "",
     "Long-term memory snapshot:",
-    longTermMemorySnapshot(),
+    longTermMemorySnapshot(userId),
     "",
     "Founder idea backlog:",
-    formattedIdeaBacklog(),
+    formattedIdeaBacklog(userId),
     "",
     "Recent research sources:",
-    formattedResearchSources(),
+    formattedResearchSources(userId),
     "",
     "Summary from Business & Growth Mentor (if available):",
     bizSummary || "(business mentor not run yet; infer from question/profile)",
@@ -850,7 +885,7 @@ export async function summarizePdfUpload(fileName: string): Promise<string> {
     throw new Error("PDF summary agent is not initialized.");
   }
   const input = buildPdfSummaryInput(fileName);
-  const { fullText } = await runAgentWithStreaming(pdfSummaryAgent, input, "pdf");
+  const { fullText } = await runAgentWithStreaming(pdfSummaryAgent, input, "pdf", "default_user");
   return fullText.trim();
 }
 
@@ -881,12 +916,12 @@ function stopSpinner(timer: NodeJS.Timeout | (() => void)) {
   }
 }
 
-async function runAgentWithStreaming(agent: Agent, input: string, label: AgentLabel): Promise<{ fullText: string }> {
+async function runAgentWithStreaming(agent: Agent, input: string, label: AgentLabel, userId: string): Promise<{ fullText: string }> {
   const verbose = !quietMode;
   const streamAnswers = !quietMode;
   const spinner = startSpinner(label, "thinking...");
 
-  const stream = await getAgentStream(agent, input, label);
+  const stream = await getAgentStream(agent, input, label, userId);
   let fullText = "";
 
   const handleTextDelta = (delta: string) => {
@@ -987,7 +1022,7 @@ function logReasoning(label: AgentLabel, data: Record<string, unknown>) {
   console.log(`${formatLabel(label)} ${colorThinking(label, thinkingMessage)}`);
 }
 
-async function runFounderProfiler(question: string) {
+async function runFounderProfiler(userId: string, question: string) {
   if (!founderProfiler) {
     return;
   }
@@ -1000,36 +1035,36 @@ async function runFounderProfiler(question: string) {
     question,
     "",
     "Existing founder profile snapshot (JSON):",
-    founderProfileSnapshot(),
+    founderProfileSnapshot(userId),
     "",
     "Long-term memory snapshot:",
-    longTermMemorySnapshot(),
+    longTermMemorySnapshot(userId),
     "",
     "Founder idea backlog:",
-    formattedIdeaBacklog(),
+    formattedIdeaBacklog(userId),
     "",
     "Recent research sources:",
-    formattedResearchSources(),
+    formattedResearchSources(userId),
     "",
     "Task: Update the profile with any new signals, highlight risks/opportunities, list clarifying questions, and output the JSON block as specified."
   ].join("\n");
 
-  const { fullText } = await runAgentWithStreaming(founderProfiler, profilerInput, "profile");
+  const { fullText } = await runAgentWithStreaming(founderProfiler, profilerInput, "profile", userId);
   const profileUpdate = extractFounderProfile(fullText);
-  mergeFounderProfile(profileUpdate);
+  mergeFounderProfile(userId, profileUpdate);
 }
 
-function fallbackRouterPlan(question: string): RouterPlan {
-  const mentors = routeMentors(question);
+function fallbackRouterPlan(userId: string, question: string): RouterPlan {
+  const mentors = routeMentors(userId, question);
   return {
     mentors: mentors.length > 0 ? mentors : ["biz"],
     reason: "Heuristic fallback based on question keywords."
   };
 }
 
-async function runRouterDecision(question: string): Promise<RouterPlan> {
+async function runRouterDecision(userId: string, question: string): Promise<RouterPlan> {
   if (!routerAgent) {
-    return fallbackRouterPlan(question);
+    return fallbackRouterPlan(userId, question);
   }
 
   const routerInput = [
@@ -1037,23 +1072,23 @@ async function runRouterDecision(question: string): Promise<RouterPlan> {
     question,
     "",
     "Founder profile snapshot (JSON):",
-    founderProfileSnapshot(),
+    founderProfileSnapshot(userId),
     "",
     "Long-term memory snapshot:",
-    longTermMemorySnapshot(),
+    longTermMemorySnapshot(userId),
     "",
     "Founder idea backlog:",
-    formattedIdeaBacklog(),
+    formattedIdeaBacklog(userId),
     "",
     "Recent research sources:",
-    formattedResearchSources(),
+    formattedResearchSources(userId),
     "",
     "Task:",
     "- Provide a one-sentence line starting with 'Router check:' that confirms or reframes the user's ask.",
     "- Then output the JSON block described in your instructions."
   ].join("\n");
 
-  const { fullText } = await runAgentWithStreaming(routerAgent, routerInput, "router");
+  const { fullText } = await runAgentWithStreaming(routerAgent, routerInput, "router", userId);
   const checkLine = extractRouterCheck(fullText);
   if (checkLine) {
     console.log(`${formatLabel("router")} ${colorThinking("router", checkLine)}`);
@@ -1063,7 +1098,7 @@ async function runRouterDecision(question: string): Promise<RouterPlan> {
   if (plan && plan.mentors.length > 0) {
     return plan;
   }
-  return fallbackRouterPlan(question);
+  return fallbackRouterPlan(userId, question);
 }
 
 function extractResearchNotes(text: string): ResearchNotes | null {
@@ -1079,38 +1114,41 @@ function extractResearchNotes(text: string): ResearchNotes | null {
   }
 }
 
-function mergeResearchNotes(notes: ResearchNotes | null) {
+function mergeResearchNotes(userId: string, notes: ResearchNotes | null) {
   if (!notes) {
     return;
   }
 
+  const state = getUserState(userId);
+
   const newInsights = notes.profile_insights ?? [];
   if (newInsights.length > 0) {
-    const existing = founderProfile.notes ? `${founderProfile.notes}\n` : "";
-    founderProfile.notes = `${existing}${newInsights.join("\n")}`.trim();
+    const existing = state.founderProfile.notes ? `${state.founderProfile.notes}\n` : "";
+    state.founderProfile.notes = `${existing}${newInsights.join("\n")}`.trim();
   }
 
   if (notes.idea_leads) {
     for (const idea of notes.idea_leads) {
-      if (idea && !founderIdeaBacklog.includes(idea)) {
-        founderIdeaBacklog.push(idea);
+      if (idea && !state.founderIdeaBacklog.includes(idea)) {
+        state.founderIdeaBacklog.push(idea);
       }
     }
-    trimList(founderIdeaBacklog, IDEA_BACKLOG_LIMIT);
+    trimList(state.founderIdeaBacklog, IDEA_BACKLOG_LIMIT);
   }
 
   if (notes.sources) {
     for (const source of notes.sources) {
-      if (source && !researchSourceLog.includes(source)) {
-        researchSourceLog.push(source);
+      if (source && !state.researchSourceLog.includes(source)) {
+        state.researchSourceLog.push(source);
       }
     }
-    trimList(researchSourceLog, RESEARCH_SOURCE_LIMIT);
+    trimList(state.researchSourceLog, RESEARCH_SOURCE_LIMIT);
   }
 }
 
-async function refreshLongTermMemory(force = false) {
-  if (longTermMemoryHydrated && !force) {
+async function refreshLongTermMemory(userId: string, force = false) {
+  const state = getUserState(userId);
+  if (state.longTermMemoryHydrated && !force) {
     return;
   }
 
@@ -1127,28 +1165,31 @@ async function refreshLongTermMemory(force = false) {
       })
       .filter((text): text is string => Boolean(text));
 
-    longTermMemories = parsed.slice(-LONG_TERM_MEMORY_LIMIT);
-    longTermMemoryHydrated = true;
+    state.longTermMemories = parsed.slice(-LONG_TERM_MEMORY_LIMIT);
+    state.longTermMemoryHydrated = true;
   } catch (error) {
     console.warn("Failed to sync long-term memory from Mem0:", error);
   }
 }
 
-function pushLongTermMemory(text: string) {
+function pushLongTermMemory(userId: string, text: string) {
   const value = text.trim();
   if (!value) {
     return;
   }
-  longTermMemories.push(value);
-  trimList(longTermMemories, LONG_TERM_MEMORY_LIMIT);
-  longTermMemoryHydrated = true;
+  const state = getUserState(userId);
+  state.longTermMemories.push(value);
+  trimList(state.longTermMemories, LONG_TERM_MEMORY_LIMIT);
+  state.longTermMemoryHydrated = true;
 }
 
-async function writeLongTermMemory(question: string, finalResponse: string) {
+async function writeLongTermMemory(userId: string, question: string, finalResponse: string) {
   const summary = finalResponse.trim();
   if (!summary) {
     return;
   }
+
+  const state = getUserState(userId);
 
   try {
     await memClient.add(
@@ -1161,42 +1202,44 @@ async function writeLongTermMemory(question: string, finalResponse: string) {
         metadata: {
           workflow: WORKFLOW_NAME,
           timestamp: new Date().toISOString(),
-          idea_backlog: founderIdeaBacklog.slice(-5),
-          sources: researchSourceLog.slice(-5)
+          idea_backlog: state.founderIdeaBacklog.slice(-5),
+          sources: state.researchSourceLog.slice(-5)
         }
       }
     );
-    pushLongTermMemory(summary);
+    pushLongTermMemory(userId, summary);
   } catch (error) {
     console.warn("Failed to persist long-term memory to Mem0:", error);
   }
 }
 
-async function getOrCreateConversationId(force = false): Promise<string> {
+async function getOrCreateConversationId(userId: string, force = false): Promise<string> {
   if (!force) {
-    const cached = loadConversationIdFromCache();
+    const cached = loadConversationIdFromCache(userId);
     if (cached) {
       return cached;
     }
   }
 
   const newId = await startOpenAIConversationsSession(openai);
-  saveConversationIdToCache(newId);
+  saveConversationIdToCache(userId, newId);
   return newId;
 }
 
-async function ensureConversationSession(force = false): Promise<void> {
-  if (!force && conversationSession) {
+async function ensureConversationSession(userId: string, force = false): Promise<void> {
+  const state = getUserState(userId);
+  if (!force && state.conversationSession) {
     return;
   }
-  const conversationId = await getOrCreateConversationId(force);
-  conversationSession = new OpenAIConversationsSession({ conversationId, client: openai });
+  const conversationId = await getOrCreateConversationId(userId, force);
+  state.conversationSession = new OpenAIConversationsSession({ conversationId, client: openai });
 }
 
-async function resetConversationSession(): Promise<void> {
-  clearConversationCache();
-  conversationSession = null;
-  await ensureConversationSession(true);
+async function resetConversationSession(userId: string): Promise<void> {
+  const state = getUserState(userId);
+  clearConversationCache(userId);
+  state.conversationSession = null;
+  await ensureConversationSession(userId, true);
 }
 
 function isConversationMissingError(error: unknown): boolean {
@@ -1213,28 +1256,31 @@ async function getAgentStream(
   agent: Agent,
   input: string,
   label: AgentLabel,
+  userId: string,
   attempt = 1
 ): Promise<AsyncIterable<any>> {
-  await ensureConversationSession(attempt > 1);
-  if (!conversationSession) {
+  await ensureConversationSession(userId, attempt > 1);
+  const state = getUserState(userId);
+  if (!state.conversationSession) {
     throw new Error("Conversation session is not initialized.");
   }
   try {
     return await run(agent, input, {
       stream: true,
       workflowName: WORKFLOW_NAME,
-      session: conversationSession
+      session: state.conversationSession
     });
   } catch (error) {
     if (attempt < 2 && isConversationMissingError(error)) {
-      await resetConversationSession();
-      return getAgentStream(agent, input, label, attempt + 1);
+      await resetConversationSession(userId);
+      return getAgentStream(agent, input, label, userId, attempt + 1);
     }
     throw error;
   }
 }
 
 async function runSynthesizer(
+  userId: string,
   question: string,
   routerPlan: RouterPlan,
   mentorOutputs: Partial<Record<MentorLabel, string>>
@@ -1252,16 +1298,16 @@ async function runSynthesizer(
     question,
     "",
     "Founder profile snapshot (JSON):",
-    founderProfileSnapshot(),
+    founderProfileSnapshot(userId),
     "",
     "Long-term memory snapshot:",
-    longTermMemorySnapshot(),
+    longTermMemorySnapshot(userId),
     "",
     "Founder idea backlog:",
-    formattedIdeaBacklog(),
+    formattedIdeaBacklog(userId),
     "",
     "Latest research sources:",
-    formattedResearchSources(),
+    formattedResearchSources(userId),
     "",
     "Router rationale:",
     routerPlan.reason,
@@ -1273,7 +1319,7 @@ async function runSynthesizer(
     "Task: produce the unified YC mentor response as described in your instructions."
   ].join("\n");
 
-  const { fullText } = await runAgentWithStreaming(synthesizerAgent, synthInput, "synth");
+  const { fullText } = await runAgentWithStreaming(synthesizerAgent, synthInput, "synth", userId);
   return fullText;
 }
 
@@ -1300,7 +1346,7 @@ function needsResearch(question: string): boolean {
   return researchKeywords.some((kw) => text.includes(kw));
 }
 
-async function runResearchAgent(question: string): Promise<void> {
+async function runResearchAgent(userId: string, question: string): Promise<void> {
   if (!researchAgent) {
     return;
   }
@@ -1310,16 +1356,16 @@ async function runResearchAgent(question: string): Promise<void> {
     question,
     "",
     "Founder profile snapshot (JSON):",
-    founderProfileSnapshot(),
+    founderProfileSnapshot(userId),
     "",
     "Long-term memory snapshot:",
-    longTermMemorySnapshot(),
+    longTermMemorySnapshot(userId),
     "",
     "Founder idea backlog:",
-    formattedIdeaBacklog(),
+    formattedIdeaBacklog(userId),
     "",
     "Existing research sources:",
-    formattedResearchSources(),
+    formattedResearchSources(userId),
     "",
     "Task:",
     "- Use web search to gather fresh intel about the founder, their companies, or referenced articles/blog posts.",
@@ -1327,12 +1373,14 @@ async function runResearchAgent(question: string): Promise<void> {
     "- Output the JSON block described in your instructions."
   ].join("\n");
 
-  const { fullText } = await runAgentWithStreaming(researchAgent, prompt, "research");
+  const { fullText } = await runAgentWithStreaming(researchAgent, prompt, "research", userId);
   const notes = extractResearchNotes(fullText);
-  mergeResearchNotes(notes);
+  mergeResearchNotes(userId, notes);
 }
 
-export async function runWorkflow(question: string) {
+// --- Dispatcher & Flows ---
+
+async function runConsoleFlow(userId: string, question: string) {
   if (
     !businessGrowthMentor ||
     !fundraisingMentor ||
@@ -1344,13 +1392,13 @@ export async function runWorkflow(question: string) {
     throw new Error("Agents are not initialized yet.");
   }
 
-  await ensureConversationSession();
-  await refreshLongTermMemory();
+  await ensureConversationSession(userId);
+  await refreshLongTermMemory(userId);
   if (needsResearch(question)) {
-    await runResearchAgent(question);
+    await runResearchAgent(userId, question);
   }
-  const routerPlan = await runRouterDecision(question);
-  await runFounderProfiler(question);
+  const routerPlan = await runRouterDecision(userId, question);
+  await runFounderProfiler(userId, question);
   
   const mentorsToRun = Array.from(new Set(routerPlan.mentors)) as RouterAgentLabel[];
   const activeMentors = mentorsToRun.filter((m) => m !== "profile") as MentorLabel[];
@@ -1379,29 +1427,100 @@ export async function runWorkflow(question: string) {
   for (const mentor of activeMentors) {
     if (mentor === "biz") {
       announceSection("biz", "YC Business & Growth Mentor");
-      const bizInput = buildBusinessInput(question);
-      const { fullText } = await runAgentWithStreaming(businessGrowthMentor, bizInput, "biz");
+      const bizInput = buildBusinessInput(userId, question);
+      const { fullText } = await runAgentWithStreaming(businessGrowthMentor, bizInput, "biz", userId);
       mentorOutputs.biz = fullText;
       bizSummaryBlock = extractSummaryFromBiz(fullText);
     } else if (mentor === "fund") {
       announceSection("fund", "YC Fundraising & Market Strategy Mentor");
-      const fundraisingInput = buildFundraisingInput(question, bizSummaryBlock);
-      const { fullText } = await runAgentWithStreaming(fundraisingMentor, fundraisingInput, "fund");
+      const fundraisingInput = buildFundraisingInput(userId, question, bizSummaryBlock);
+      const { fullText } = await runAgentWithStreaming(fundraisingMentor, fundraisingInput, "fund", userId);
       mentorOutputs.fund = fullText;
     } else if (mentor === "vehicle") {
       announceSection("vehicle", "US VC Fund & LP Expert");
-      const vehicleInput = buildVehicleInput(question, bizSummaryBlock);
-      const { fullText } = await runAgentWithStreaming(vehicleMentor, vehicleInput, "vehicle");
+      const vehicleInput = buildVehicleInput(userId, question, bizSummaryBlock);
+      const { fullText } = await runAgentWithStreaming(vehicleMentor, vehicleInput, "vehicle", userId);
       mentorOutputs.vehicle = fullText;
     }
   }
 
   const finalResponse = await runSynthesizer(
+    userId,
     question,
     { ...routerPlan, mentors: mentorsToRun as any }, // Cast to any to match the schema which expects MentorLabel[]
     mentorOutputs
   );
-  await writeLongTermMemory(question, finalResponse);
+  await writeLongTermMemory(userId, question, finalResponse);
+}
+
+async function runProfileFlow(userId: string, question: string) {
+  if (!founderProfiler) throw new Error("Agents not initialized");
+  await ensureConversationSession(userId);
+  await refreshLongTermMemory(userId);
+  
+  // Profile flow is purely a conversation with the Founder Profiler
+  await runFounderProfiler(userId, question);
+  
+  // Note: runFounderProfiler streams internally via runAgentWithStreaming -> getAgentStream -> session
+  // It parses the JSON but we also want the conversation to be natural.
+  // The agent is prompted to output JSON but also "list clarifying questions".
+  // The streaming output from runFounderProfiler IS the response the user sees.
+}
+
+async function runIdeationFlow(userId: string, question: string) {
+  if (!researchAgent || !businessGrowthMentor) throw new Error("Agents not initialized");
+  await ensureConversationSession(userId);
+  await refreshLongTermMemory(userId);
+
+  // 1. Research Context
+  await runResearchAgent(userId, question);
+  
+  // 2. Business Mentor for Ideation
+  announceSection("biz", "YC Ideation Partner");
+  const bizInput = buildBusinessInput(userId, question + "\n\nTask: Focus on idea generation, market gaps, and validating the problem. Propose top 4 ideas if asked.");
+  await runAgentWithStreaming(businessGrowthMentor, bizInput, "biz", userId);
+}
+
+async function runSprintFlow(userId: string, question: string) {
+  if (!businessGrowthMentor) throw new Error("Agents not initialized");
+  await ensureConversationSession(userId);
+  await refreshLongTermMemory(userId);
+
+  announceSection("biz", "YC Sprint Coach");
+  const bizInput = buildBusinessInput(userId, question + "\n\nTask: Provide a 90-minute execution plan. Be extremely tactical. Focus on 'Do things that don't scale'.");
+  await runAgentWithStreaming(businessGrowthMentor, bizInput, "biz", userId);
+}
+
+async function runVibeceleratorFlow(userId: string, question: string) {
+  if (!businessGrowthMentor) throw new Error("Agents not initialized");
+  await ensureConversationSession(userId);
+  await refreshLongTermMemory(userId);
+
+  // Placeholder: Uses Business Mentor but with a specific Vibe/Accelerator prompt injection
+  announceSection("biz", "9-Day Vibecelerator Coach");
+  const input = buildBusinessInput(userId, question + "\n\nTask: Guide the founder through the 9-Day Vibecelerator program. High energy, heavy on 'vibe' and momentum.");
+  await runAgentWithStreaming(businessGrowthMentor, input, "biz", userId);
+}
+
+export async function handleStepRequest(stepId: string, question: string, userId: string) {
+  switch (stepId) {
+    case "flow_profile":
+      await runProfileFlow(userId, question);
+      break;
+    case "flow_ideation":
+      await runIdeationFlow(userId, question);
+      break;
+    case "flow_sprint":
+      await runSprintFlow(userId, question);
+      break;
+    case "flow_vibecelerator":
+      await runVibeceleratorFlow(userId, question);
+      break;
+    case "flow_console":
+    default:
+      await runConsoleFlow(userId, question);
+      break;
+  }
 }
 
 export async function initializeWorkflow(): Promise<void> {
@@ -1415,24 +1534,27 @@ export function processSlashCommand(line: string): boolean {
 export async function resetUserData(userId: string): Promise<void> {
   try {
     // 1. Clear conversation cache
-    const userConversationPath = path.resolve(vectorStoreCacheDir, `conversation_${userId}.json`);
+    const userConversationPath = getConversationPath(userId);
     if (fs.existsSync(userConversationPath)) {
       fs.unlinkSync(userConversationPath);
     }
 
     // 2. Clear Mem0 long-term memory
-    if (memClient) {
-      // Mem0 doesn't have a "deleteAll" by user, but we can list and delete.
-      // For now, we'll just reset the local state which forces a refresh.
-      // In production, you'd iterate and delete from Mem0 API.
-      longTermMemories = [];
-      longTermMemoryHydrated = false;
+    // Mem0 doesn't have a "deleteAll" by user, but we can list and delete.
+    // For now, we'll just reset the local state which forces a refresh.
+    
+    // 3. Clear User State
+    if (userStateMap.has(userId)) {
+      const state = userStateMap.get(userId)!;
+      state.founderProfile = {};
+      state.founderIdeaBacklog = [];
+      state.researchSourceLog = [];
+      state.longTermMemories = [];
+      state.longTermMemoryHydrated = false;
+      state.conversationSession = null;
+      // Note: we don't delete the key entirely so the object reference remains valid if held elsewhere,
+      // but resetting properties is cleaner.
     }
-
-    // 3. Clear Founder Profile
-    founderProfile = {};
-    founderIdeaBacklog = [];
-    researchSourceLog = [];
 
     console.log(`[Reset] Data cleared for user ${userId}`);
   } catch (error) {

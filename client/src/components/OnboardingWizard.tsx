@@ -3,7 +3,7 @@ import { Layout } from "./Layout";
 import { LoginScreen } from "./LoginScreen";
 import { ProfileStep } from "./ProfileStep";
 
-type Step = "login" | "profile" | "idea" | "sprint" | "result" | "console";
+type Step = "login" | "profile" | "idea" | "sprint" | "vibecelerator" | "result" | "console";
 
 export const OnboardingWizard = () => {
   const [step, setStep] = useState<Step>("login");
@@ -56,47 +56,62 @@ export const OnboardingWizard = () => {
     profile: 1,
     idea: 2,
     sprint: 3,
-    result: 4,
-    console: 5
+    vibecelerator: 4,
+    result: 5,
+    console: 6
   };
 
   return (
     <Layout 
       step={stepMap[step]} 
-      totalSteps={5} 
+      totalSteps={6} 
       onReset={handleReset}
     >
       {step === "profile" && (
         <ProfileStep 
           userId={userId} 
+          flowId="flow_profile"
           onComplete={() => setStep("idea")} 
         />
       )}
-      {/* Placeholders for next steps */}
       {step === "idea" && (
-        <div className="p-10 text-center text-gray-500">
-          <h2 className="text-2xl text-white mb-4">Step 2: Ideation</h2>
-          <p>[Coming Soon: Research Agent Interface]</p>
-          <button onClick={() => setStep("sprint")} className="mt-4 text-yellow-400 border border-yellow-400 px-4 py-2 rounded">Next (Debug)</button>
-        </div>
+        <ProfileStep
+          userId={userId}
+          flowId="flow_ideation"
+          onComplete={() => setStep("sprint")}
+          overrideSeed="Let's brainstorm. I'll check market data and propose ideas."
+        />
       )}
       {step === "sprint" && (
-        <div className="p-10 text-center text-gray-500">
-          <h2 className="text-2xl text-white mb-4">Step 3: 90min Sprint</h2>
-          <p>[Coming Soon: Timer + Upload]</p>
-          <button onClick={() => setStep("result")} className="mt-4 text-yellow-400 border border-yellow-400 px-4 py-2 rounded">Next (Debug)</button>
-        </div>
+        <ProfileStep
+          userId={userId}
+          flowId="flow_sprint"
+          onComplete={() => setStep("vibecelerator")}
+          overrideSeed="Ready for the 90-minute sprint. What's the plan?"
+        />
+      )}
+      {step === "vibecelerator" && (
+        <ProfileStep
+          userId={userId}
+          flowId="flow_vibecelerator"
+          onComplete={() => setStep("result")}
+          overrideSeed="Welcome to the 9-Day Vibecelerator. Let's get moving!"
+        />
       )}
       {step === "result" && (
         <div className="p-10 text-center text-gray-500">
-          <h2 className="text-2xl text-white mb-4">Step 4: Results</h2>
+          <h2 className="text-2xl text-white mb-4">Step 5: Verdict</h2>
           <p>[Coming Soon: Synthesizer Verdict]</p>
           <button onClick={() => setStep("console")} className="mt-4 text-yellow-400 border border-yellow-400 px-4 py-2 rounded">Enter Console</button>
         </div>
       )}
       {step === "console" && (
-        <ProfileStep userId={userId} onComplete={() => {}} /> 
-        // Reusing ProfileStep as the console for now since it's just a chat
+        <ProfileStep 
+          userId={userId} 
+          flowId="flow_console"
+          onComplete={() => {}} 
+          overrideSeed="Console ready. All agents online."
+        /> 
       )}
     </Layout>
   );

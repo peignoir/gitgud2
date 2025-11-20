@@ -16,11 +16,11 @@ import { createHash } from "node:crypto";
 
 import {
   initializeWorkflow,
-  runWorkflow,
   processSlashCommand,
   getVectorStoreId,
   summarizePdfUpload,
-  resetUserData
+  resetUserData,
+  handleStepRequest
 } from "./core/workflow.js";
 import { getAllPrompts, PromptKey, setPrompt } from "./core/prompts.js";
 
@@ -141,6 +141,7 @@ app.get("/api/stream", async (req, res) => {
   const rawQuestion = (req.query.question as string | undefined) ?? "";
   // Support both header (ideal) and query param (for EventSource limitation)
   const userId = (req.headers["x-user-id"] as string) || (req.query.userId as string) || "default_user";
+  const stepId = (req.query.step as string | undefined) || "flow_console";
   const question = rawQuestion.trim();
 
   if (!question) {
@@ -164,7 +165,7 @@ app.get("/api/stream", async (req, res) => {
         if (question.startsWith("/")) {
           processSlashCommand(question);
         } else {
-          await runWorkflow(question, userId);
+          await handleStepRequest(stepId, question, userId);
         }
       },
       (chunk) => send("chunk", { chunk })
