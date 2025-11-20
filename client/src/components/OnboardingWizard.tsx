@@ -44,13 +44,13 @@ export const OnboardingWizard = () => {
   const handleReset = async () => {
     if (!userId) return;
     if (confirm("Are you sure? This will wipe all your data.")) {
-      try {
+    try {
         const API_BASE_URL = import.meta.env.VITE_API_URL || "";
         await fetch(`${API_BASE_URL}/api/reset`, {
-          method: "POST",
-          headers: { "x-user-id": userId }
-        });
-        localStorage.removeItem("gitgud_userid");
+        method: "POST",
+        headers: { "x-user-id": userId }
+      });
+      localStorage.removeItem("gitgud_userid");
         setUserId("");
         setStep("login");
       } catch (e) {
@@ -60,13 +60,7 @@ export const OnboardingWizard = () => {
     }
   };
 
-  if (step === "login") {
-    return (
-      <Layout step={0} totalSteps={0}>
-        <LoginScreen onLogin={handleLogin} />
-      </Layout>
-    );
-  }
+  const stageOrder: Step[] = ["login", "profile", "idea", "sprint", "vibecelerator", "result", "console"];
 
   const stepConfig: Record<Step, StepMeta> = useMemo(
     () => ({
@@ -212,7 +206,87 @@ export const OnboardingWizard = () => {
     []
   );
 
+  const colorToTokens = (color: string | undefined) => {
+    if (!color) {
+      return { bg: "bg-white", pastel: "bg-white/80", text: "text-black" };
+    }
+    const pastel = color.replace("text-", "bg-") + "/20";
+    const solid = color.replace("text-", "bg-");
+    return { bg: solid, pastel, text: color.replace("text-", "text-") };
+  };
   const currentConfig = stepConfig[step];
+  const currentStageIndex = stageOrder.indexOf(step);
+  const handleStageSelect = (nextStep: Step) => {
+    const nextIndex = stageOrder.indexOf(nextStep);
+    if (nextIndex === -1) {
+      return;
+    }
+    if (nextIndex <= currentStageIndex) {
+      setStep(nextStep);
+    }
+  };
+
+  const stageNav = (
+    <div className="px-4 py-4 bg-gradient-to-b from-[#090c15] to-transparent">
+      <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.35em] text-white/60 mb-3">
+        <span>Console Flow</span>
+        <span>
+          Stage {Math.max(currentStageIndex + 1, 1)} / {stageOrder.length}
+        </span>
+      </div>
+      <div className="flex items-center gap-4 overflow-x-auto pb-1">
+        {stageOrder.map((stageKey, index) => {
+          const meta = stepConfig[stageKey];
+          const isActive = stageKey === step;
+          const isComplete = currentStageIndex > index;
+          const tokens = colorToTokens(meta.color ?? "text-yellow-300");
+          
+          // If active, we use the colored pastel fill.
+          // If not active (future or past), we use the transparent outline look.
+          const pillClasses = isActive
+            ? `${tokens.bg} text-black shadow-lg border border-transparent`
+            : "bg-transparent border border-white/25 text-white/70";
+            
+          const connectorClasses = currentStageIndex >= index ? tokens.bg : "bg-white/20";
+          return (
+            <div key={stageKey} className="flex items-center gap-4 min-w-max">
+              {index > 0 && <div className={`h-px w-8 ${connectorClasses}`} />}
+              <button
+                className={`flex items-center gap-3 rounded-3xl px-3 py-2 text-left transition ${pillClasses} ${
+                  !isActive && !isComplete ? "opacity-70" : ""
+                }`}
+                onClick={() => handleStageSelect(stageKey)}
+                disabled={!isComplete && !isActive}
+              >
+                <div
+                  className={`h-10 w-10 rounded-2xl border ${
+                    isActive
+                      ? "border-black/20 bg-black/10 text-black"
+                      : "border-white/20 bg-transparent text-white/80"
+                  } flex items-center justify-center text-sm font-semibold`}
+                >
+                  {index + 1}
+                </div>
+                <div>
+                  <p
+                    className={`text-[10px] uppercase tracking-[0.3em] ${
+                      isActive ? "text-black/60" : "text-white/40"
+                    }`}
+                  >
+                    {meta.badge || `Stage ${index + 1}`}
+                  </p>
+                  <p className={`text-sm font-semibold ${isActive ? "text-black" : "text-white/90"}`}>
+                    {meta.title}
+                  </p>
+                </div>
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
   const hero = (
     <div className={`px-5 py-6 bg-gradient-to-r ${currentConfig.gradient} border-white/5`}>
       <p className="text-[11px] uppercase tracking-[0.4em] text-white/60 mb-2">{currentConfig.badge}</p>
@@ -240,11 +314,19 @@ export const OnboardingWizard = () => {
       totalSteps={6}
       stepTitle={currentConfig.title}
       stepColor={currentConfig.color}
+      topNav={stageNav}
       hero={hero}
       onReset={handleReset}
       chromeTone={currentConfig.chromeTone}
       contentClassName={currentConfig.contentClassName}
     >
+      {step === "login" && (
+        <div className="flex h-full items-center justify-center px-4 py-8">
+          <div className="w-full max-w-md">
+            <LoginScreen onLogin={handleLogin} />
+          </div>
+        </div>
+      )}
       {step === "profile" && (
         <ProfileStep 
           userId={userId} 

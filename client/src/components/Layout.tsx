@@ -10,6 +10,7 @@ interface LayoutProps {
   hero?: React.ReactNode;
   chromeTone?: string;
   contentClassName?: string;
+  topNav?: React.ReactNode;
 }
 
 export const Layout: React.FC<LayoutProps> = ({
@@ -21,7 +22,8 @@ export const Layout: React.FC<LayoutProps> = ({
   stepColor = "text-yellow-400",
   hero,
   chromeTone = "bg-[#060911]",
-  contentClassName = ""
+  contentClassName = "",
+  topNav
 }) => {
   const accentBgClass = stepColor.replace("text-", "bg-");
 
@@ -75,6 +77,10 @@ export const Layout: React.FC<LayoutProps> = ({
              </div>
            </div>
         </div>
+      )}
+
+      {topNav && (
+        <section className="border-b border-white/5 bg-[#05070f]">{topNav}</section>
       )}
 
       {hero && (
