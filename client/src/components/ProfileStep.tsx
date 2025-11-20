@@ -39,6 +39,7 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
   const bottomRef = useRef<HTMLDivElement>(null);
   const seedRef = useRef(false);
   const [draft, setDraft] = useState("");
+  const [showDebug, setShowDebug] = useState(false);
 
   // Auto-scroll
   useEffect(() => {
@@ -56,6 +57,21 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
   const handleSend = async () => {
     if (!draft.trim()) return;
     const text = draft.trim();
+    
+    // Handle commands
+    if (text.startsWith('/')) {
+      if (text === '/show' || text === '/debug') {
+        setShowDebug(!showDebug);
+        setDraft("");
+        return;
+      }
+      if (text === '/hide') {
+        setShowDebug(false);
+        setDraft("");
+        return;
+      }
+    }
+    
     setDraft("");
     await sendMessage(text);
   };
@@ -80,27 +96,39 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
             </span>
             <p className="text-sm text-gray-300 mt-1 max-w-xl">{mergedVibe.description}</p>
           </div>
-          <button
-            onClick={onComplete}
-            className="text-[10px] uppercase tracking-wider text-gray-500 hover:text-white transition-colors"
-          >
-            [Skip · Debug]
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowDebug(!showDebug)}
+              className={`text-[10px] uppercase tracking-wider transition-colors ${
+                showDebug ? "text-yellow-400" : "text-gray-500 hover:text-white"
+              }`}
+            >
+              {showDebug ? "[Hide Debug]" : "[Show Debug]"}
+            </button>
+            <button
+              onClick={onComplete}
+              className="text-[10px] uppercase tracking-wider text-gray-500 hover:text-white transition-colors"
+            >
+              [Skip]
+            </button>
+          </div>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-24">
         {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} />
+          <MessageBubble key={msg.id} message={msg} showDebug={showDebug} />
         ))}
         <div ref={bottomRef} />
       </div>
 
       <div className="p-4 bg-black/30 backdrop-blur-sm border-t border-white/5">
-        <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-gray-500 mb-2">
-          <span className={`w-2 h-2 rounded-full ${isStreaming ? "bg-yellow-300 animate-pulse" : "bg-emerald-300"}`} />
-          {isStreaming ? "Agent drafting…" : "Ready"}
-        </div>
+        {showDebug && (
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-gray-500 mb-2">
+            <span className={`w-2 h-2 rounded-full ${isStreaming ? "bg-yellow-300 animate-pulse" : "bg-emerald-300"}`} />
+            {isStreaming ? "Agent drafting…" : "Ready"}
+          </div>
+        )}
         <div className="flex items-center gap-2 bg-white/5 rounded-lg px-4 py-2 border border-white/10 focus-within:border-yellow-400/50 transition-colors">
           <input
             onKeyDown={handleKeyDown}

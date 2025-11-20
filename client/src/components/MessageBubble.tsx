@@ -4,89 +4,206 @@ import { Fragment, memo, useMemo } from "react";
 
 type MessageBubbleProps = {
   message: ChatMessage;
-};
-
-const LABEL_REGEX = /\[(profile|router|biz|fund|vehicle|mentor|research|pdf)\]/gi;
-
-const LABEL_CLASS_MAP: Record<string, string> = {
-  profile: "text-green-300",
-  router: "text-yellow-300",
-  biz: "text-cyan-200",
-  fund: "text-pink-300",
-  vehicle: "text-blue-300",
-  mentor: "text-white",
-  synth: "text-white",
-  research: "text-sky-300",
-  pdf: "text-cyan-300",
+  showDebug?: boolean;
 };
 
 const ROUTER_INFO_PREFIXES = ["Router decision:", "Reason:", "Router follow-up:", "Router check:"];
 
-const colorizeLabels = (text: string) => {
-  const fragments: React.ReactNode[] = [];
+const LABEL_REGEX = /\[(profile|router|biz|fund|vehicle|mentor|research|pdf)\]/i;
+
+const LABEL_COLOR_MAP: Record<string, string> = {
+  profile: "#86efac",
+  router: "#facc15",
+  biz: "#5eead4",
+  fund: "#f472b6",
+  vehicle: "#93c5fd",
+  mentor: "#e5e7eb",
+  synth: "#e5e7eb",
+  research: "#7dd3fc",
+  pdf: "#67e8f9"
+};
+
+const ANSI_COLOR_MAP: Record<string, string> = {
+  "30": "#a1a1aa",
+  "31": "#f87171",
+  "32": "#4ade80",
+  "33": "#facc15",
+  "34": "#93c5fd",
+  "35": "#f472b6",
+  "36": "#5eead4",
+  "37": "#f8fafc",
+  "90": "#a1a1aa",
+  "94": "#7dd3fc",
+  "96": "#67e8f9"
+};
+
+const EXTENDED_COLOR_MAP: Record<string, string> = {
+  "208": "#fb923c"
+};
+
+const stripAnsi = (value: string) => value.replace(/\x1b\[[0-9;]*m/g, "");
+
+type Segment = { text: string; color?: string; bold?: boolean };
+
+const parseAnsiSegments = (input: string): Segment[] => {
+  const regex = /\x1b\[([0-9;]+)m/g;
+  const segments: Segment[] = [];
   let match: RegExpExecArray | null;
   let lastIndex = 0;
+  let currentClass: string | undefined;
+  let bold = false;
 
-  LABEL_REGEX.lastIndex = 0;
-  while ((match = LABEL_REGEX.exec(text)) !== null) {
+  while ((match = regex.exec(input)) !== null) {
     if (match.index > lastIndex) {
-      fragments.push(text.slice(lastIndex, match.index));
+      segments.push({
+        text: input.slice(lastIndex, match.index),
+        color: currentClass,
+        bold
+      });
     }
 
-    const normalized = match[1].toLowerCase();
-    fragments.push(
-      <span key={`${match.index}-${match[0]}`} className={cn("font-semibold", LABEL_CLASS_MAP[normalized] ?? "text-amber-300")}>
-        {match[0]}
-      </span>
-    );
+    const codes = match[1].split(";");
+    for (let i = 0; i < codes.length; i += 1) {
+      const code = codes[i];
+      if (code === "0") {
+        currentClass = undefined;
+        bold = false;
+        continue;
+      }
+      if (code === "1") {
+        bold = true;
+        continue;
+      }
+      if (code === "2") {
+        bold = false;
+        continue;
+      }
+      if (code === "38" && codes[i + 1] === "5" && codes[i + 2]) {
+        const extended = EXTENDED_COLOR_MAP[codes[i + 2]];
+        if (extended) {
+          currentClass = extended;
+        }
+        i += 2;
+        continue;
+      }
+      if (ANSI_COLOR_MAP[code]) {
+        currentClass = ANSI_COLOR_MAP[code];
+      }
+    }
 
-    lastIndex = LABEL_REGEX.lastIndex;
+    lastIndex = regex.lastIndex;
   }
 
-  if (lastIndex < text.length) {
-    fragments.push(text.slice(lastIndex));
+  if (lastIndex < input.length) {
+      segments.push({
+        text: input.slice(lastIndex),
+        color: currentClass,
+        bold
+      });
   }
 
-  return fragments;
+  return segments.filter((segment) => segment.text.length > 0);
 };
 
 const renderConsoleText = (text: string) => {
   const lines = text.split("\n");
 
   return lines.map((line, idx) => {
-    const trimmed = line.trimStart();
+    const stripped = stripAnsi(line);
+    const trimmed = stripped.trimStart();
     const isRouterMeta = ROUTER_INFO_PREFIXES.some((prefix) => trimmed.startsWith(prefix));
     const isCodeFence = trimmed.startsWith("```");
-    const lineClass = cn(
-      isRouterMeta && "text-orange-300",
-      isCodeFence && "text-amber-200",
-      !isRouterMeta && !isCodeFence && "text-white/90"
-    );
+    const labelMatch = stripped.match(LABEL_REGEX);
+    const labelColor = labelMatch ? LABEL_COLOR_MAP[labelMatch[1].toLowerCase()] : undefined;
+    const defaultColor =
+      labelColor ?? (isRouterMeta ? "#fb923c" : isCodeFence ? "#fcd34d" : "#f8fafc");
+    const baseLineClass = cn(isRouterMeta && "italic", isCodeFence && "font-mono");
 
-    const content = colorizeLabels(line);
+    const segments = parseAnsiSegments(line);
+    if (segments.length === 0) {
+      if (labelMatch) {
+        const [, label] = labelMatch;
+        const labelText = labelMatch[0];
+        const rest = stripped.slice(labelText.length);
+        return (
+          <Fragment key={`${line}-${idx}`}>
+            <span className={cn(baseLineClass, "font-semibold")} style={{ color: labelColor }}>
+              {labelText}
+            </span>
+            <span className={baseLineClass} style={{ color: labelColor }}>
+              {rest}
+            </span>
+            {idx < lines.length - 1 && <br />}
+          </Fragment>
+        );
+      }
+      return (
+        <Fragment key={`${line}-${idx}`}>
+          <span className={baseLineClass} style={{ color: defaultColor }}>
+            {stripped}
+          </span>
+          {idx < lines.length - 1 && <br />}
+        </Fragment>
+      );
+    }
 
     return (
       <Fragment key={`${line}-${idx}`}>
-        <span className={lineClass}>{content}</span>
+        {segments.map((segment, segIdx) => (
+          <span
+            key={`${idx}-${segIdx}`}
+            className={cn(baseLineClass, segment.bold && "font-semibold")}
+            style={{ color: segment.color ?? defaultColor }}
+          >
+            {segment.text}
+          </span>
+        ))}
         {idx < lines.length - 1 && <br />}
       </Fragment>
     );
   });
 };
 
-const MessageBubble = memo(({ message }: MessageBubbleProps) => {
+const MessageBubble = memo(({ message, showDebug = false }: MessageBubbleProps) => {
   const isUser = message.role === "user";
 
   const content = useMemo(() => {
     if (isUser) {
       return message.content;
     }
-    return renderConsoleText(message.content || "");
-  }, [message.content, isUser]);
+    
+    let messageContent = message.content || "";
+    
+    // Filter out debug/thinking content if showDebug is false
+    if (!showDebug) {
+      const lines = messageContent.split('\n');
+      const filteredLines = lines.filter(line => {
+        const stripped = stripAnsi(line).trim();
+        
+        // Hide router meta info
+        const isRouterMeta = ROUTER_INFO_PREFIXES.some((prefix) => stripped.startsWith(prefix));
+        if (isRouterMeta) return false;
+        
+        // Hide thinking patterns
+        if (stripped.includes('thinking...') || stripped.includes('[research]') || 
+            stripped.includes('[profile]') || stripped.match(/\[.*\]\s*thinking/i)) return false;
+        
+        // Hide JSON blocks (they're usually debug info)
+        if (stripped.startsWith('```json') || stripped.includes('FOUNDER_PROFILE') ||
+            stripped.includes('IDEATION_RESULTS') || stripped.includes('SPRINT_PLAN')) return false;
+        
+        return true;
+      });
+      
+      messageContent = filteredLines.join('\n').trim();
+    }
+    
+    return renderConsoleText(messageContent);
+  }, [message.content, isUser, showDebug]);
 
   return (
     <div className="w-full py-2">
-      <div className={cn("mb-1 text-[10px] font-mono uppercase tracking-wider opacity-60", isUser ? "text-cyan-400" : "text-amber-400")}>
+      <div className={cn("mb-1 text-[10px] font-mono uppercase tracking-wider opacity-60", isUser ? "text-cyan-400" : "text-yellow-300")}>
         {isUser ? "Founder" : "GitGud Mentor"}
       </div>
       <div
