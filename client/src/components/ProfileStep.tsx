@@ -40,6 +40,7 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
   const seedRef = useRef(false);
   const [draft, setDraft] = useState("");
   const [showDebug, setShowDebug] = useState(false); // Always start with debug hidden
+  const [uploadingFile, setUploadingFile] = useState(false);
   const [profileData, setProfileData] = useState<{
     founder?: string;
     background?: string;
@@ -48,6 +49,7 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
     motivations?: string;
     strengths?: string;
     gaps?: string;
+    ready?: boolean;
   }>({});
   const [hasExistingProfile, setHasExistingProfile] = useState(false);
   const [memoryCheckDone, setMemoryCheckDone] = useState(false);
@@ -97,8 +99,14 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
     // Look through all assistant messages for profile data
     for (const msg of messages.filter(m => m.role === "assistant").reverse()) {
       if (msg.content) {
+        // Check if message contains READY signal
+        if (msg.content.includes('READY')) {
+          setProfileData(prev => ({ ...prev, ready: true }));
+        }
+        
         // Try multiple patterns to find JSON
         const patterns = [
+          /```json\s+FOUNDER_PROFILE[^`]*({[^`]+})[^`]*```/s,
           /```json[^`]*({[^`]+})[^`]*```/s,
           /\{[^}]*"founder"[^}]*\}/s,
           /\{\s*"founder"[^}]+\}/s
@@ -108,7 +116,16 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
           const match = msg.content.match(pattern);
           if (match) {
             try {
-              const jsonStr = match[0].replace(/```json|```/g, '').trim();
+              // Extract the JSON part
+              let jsonStr = match[0];
+              // Remove markdown code blocks
+              jsonStr = jsonStr.replace(/```json\s*FOUNDER_PROFILE\s*|```json|```/g, '').trim();
+              // Extract just the object if it has a label
+              const objMatch = jsonStr.match(/\{[\s\S]*\}/);
+              if (objMatch) {
+                jsonStr = objMatch[0];
+              }
+              
               const data = JSON.parse(jsonStr);
               if (data.founder || data.background || data.stage || data.goals) {
                 setProfileData(prev => ({ ...prev, ...data }));
@@ -160,6 +177,43 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
     }
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Validate file type
+    if (file.type !== 'application/pdf') {
+      alert('Please upload a PDF file');
+      return;
+    }
+    
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB');
+      return;
+    }
+    
+    setUploadingFile(true);
+    
+    try {
+      // Create form data
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      // For now, we'll send a message about the PDF upload
+      // In a real implementation, you'd upload to a server and process the PDF
+      await sendMessage(`I'd like to upload my resume/document: ${file.name} (PDF upload feature coming soon)`);
+      
+      // Clear the input
+      e.target.value = '';
+    } catch (error) {
+      console.error('Upload failed:', error);
+      alert('Failed to upload file');
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
   // Debug: Check if profile is "complete" by looking for a signal in the messages
   // In a real app, the backend would send a specific event, but for now we can adds a "manual" next button
   // or look for keywords. We'll add a manual "I'm done" button for this MVP phase.
@@ -172,8 +226,8 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
   const userMessageCount = messages.filter(m => m.role === "user").length;
   const hasSubstantialConversation = userMessageCount >= 3;
   
-  // Show Next button if profile is complete OR user has had enough interaction OR has existing profile
-  const isProfileComplete = hasExistingProfile || completionPercent >= 100 || (completionPercent >= 50 && hasSubstantialConversation);
+  // Show Next button if profile is complete OR user has had enough interaction OR has existing profile OR READY signal
+  const isProfileComplete = hasExistingProfile || profileData.ready || completionPercent >= 100 || (completionPercent >= 50 && hasSubstantialConversation);
   
   // Calculate profile depth (word count as proxy)
   const wordCount = Object.values(profileData).join(' ').split(/\s+/).filter(Boolean).length;
@@ -280,26 +334,50 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
             {isStreaming ? "Agent drafting…" : "Ready"}
           </div>
         )}
-        <div className="flex items-center gap-2 bg-white/5 rounded-lg px-4 py-2 border border-white/10 focus-within:border-yellow-400/50 transition-colors">
-          <input
-            onKeyDown={handleKeyDown}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            type="text"
-            placeholder={placeholder}
-            className="flex-1 bg-transparent text-white placeholder-gray-600 outline-none min-w-0"
-            autoComplete="off"
-            style={{ WebkitTextFillColor: "#fff" }} // Force white text on iOS
-          />
-          <button
-            onClick={handleSend}
-            disabled={!draft.trim()}
-            className={`font-bold transition-colors ${
-              !draft.trim() ? "text-gray-600 cursor-not-allowed" : "text-yellow-400 hover:text-yellow-300"
-            }`}
-          >
-            SEND
-          </button>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 bg-white/5 rounded-lg px-4 py-2 border border-white/10 focus-within:border-yellow-400/50 transition-colors">
+            <input
+              onKeyDown={handleKeyDown}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              type="text"
+              placeholder={placeholder}
+              className="flex-1 bg-transparent text-white placeholder-gray-600 outline-none min-w-0"
+              autoComplete="off"
+              style={{ WebkitTextFillColor: "#fff" }} // Force white text on iOS
+            />
+            <label className="relative cursor-pointer">
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={handleFileUpload}
+                disabled={uploadingFile}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              />
+              <div className={`flex items-center gap-1 px-2 py-1 text-xs font-medium transition-colors ${
+                uploadingFile 
+                  ? "text-gray-600 cursor-not-allowed" 
+                  : "text-gray-400 hover:text-yellow-400"
+              }`}>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                </svg>
+                PDF
+              </div>
+            </label>
+            <button
+              onClick={handleSend}
+              disabled={!draft.trim()}
+              className={`font-bold transition-colors ${
+                !draft.trim() ? "text-gray-600 cursor-not-allowed" : "text-yellow-400 hover:text-yellow-300"
+              }`}
+            >
+              SEND
+            </button>
+          </div>
+          <div className="text-[10px] text-gray-500 px-1">
+            💡 Tip: Upload PDFs like your resume, pitch deck, or other documents to provide more context
+          </div>
         </div>
       </div>
     </div>
