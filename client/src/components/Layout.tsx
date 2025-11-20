@@ -51,8 +51,10 @@ export const Layout: React.FC<LayoutProps> = ({
 
       {/* Simplified Progress Indicator */}
       {topNav && (
-        <div className="bg-[#05070f] border-b border-white/10">
-          {topNav}
+        <div className="bg-[#05070f] border-b border-white/10 overflow-x-auto no-scrollbar">
+          <div className="min-w-max px-4">
+            {topNav}
+          </div>
         </div>
       )}
 

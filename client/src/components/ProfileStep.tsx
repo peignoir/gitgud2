@@ -246,18 +246,33 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
 
   return (
     <div className={`flex flex-col h-full ${mergedVibe.panelClassName}`}>
+      {/* Header Area */}
       <div className="px-4 py-3 border-b border-white/5 bg-white/5/30 backdrop-blur-sm">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-3">
             <span className={`text-[10px] font-semibold tracking-[0.3em] uppercase ${mergedVibe.accentClass}`}>
               {mergedVibe.badge}
             </span>
-            <p className="text-sm text-gray-300 mt-1 max-w-xl">{mergedVibe.description}</p>
+            
+            <div className="flex items-center gap-3">
+              {/* Debug Toggle */}
+              <button
+                onClick={() => setShowDebug(!showDebug)}
+                className={`text-[10px] uppercase tracking-wider transition-colors ${
+                  showDebug ? "text-yellow-400" : "text-gray-500 hover:text-white"
+                }`}
+              >
+                {showDebug ? "[Hide]" : "[Debug]"}
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            {/* Profile Completion Indicator */}
+          
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <p className="text-sm text-gray-300 max-w-xl">{mergedVibe.description}</p>
+            
+            {/* Progress Indicator */}
             {(completionPercent > 0 || userMessageCount > 0) && (
-              <div className="flex items-center gap-2 text-xs">
+              <div className="flex items-center gap-2 text-xs shrink-0">
                 <div className="w-20 h-1.5 bg-gray-800 rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-gradient-to-r from-yellow-500 to-green-500 transition-all duration-500"
@@ -269,57 +284,37 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
                 </span>
               </div>
             )}
-            
-            <button
-              onClick={() => setShowDebug(!showDebug)}
-              className={`text-[10px] uppercase tracking-wider transition-colors ${
-                showDebug ? "text-yellow-400" : "text-gray-500 hover:text-white"
-              }`}
-            >
-              {showDebug ? "[Hide Debug]" : "[Show Debug]"}
-            </button>
-            
-            {isProfileComplete && (
-              <button
-                onClick={onComplete}
-                className="px-3 py-1 bg-green-500/20 text-green-400 border border-green-500/50 rounded text-xs font-medium hover:bg-green-500/30 transition-colors"
-              >
-                Next →
-              </button>
-            )}
           </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-24">
+      {/* Chat Area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-24 min-h-0">
         {messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} showDebug={showDebug} />
         ))}
         
-        {/* Profile completion message */}
+        {/* Status Messages */}
         {hasExistingProfile && (
           <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
             <p className="text-sm text-blue-300">
-              👋 <strong>Welcome back!</strong> I already have your profile from our previous sessions. 
-              You can update any information, add more details, or click Next to continue.
+              👋 <strong>Welcome back!</strong> I already have your profile. Update details or click Next.
             </p>
           </div>
         )}
         
-        {!hasExistingProfile && isProfileComplete && profileDepth !== 'high' && (
-          <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-            <p className="text-sm text-yellow-300">
-              💡 <strong>Tip:</strong> Your profile has the basics but {profileDepth === 'low' ? 'could use more detail' : 'could be richer'}. 
-              {' '}The more context you share, the better the AI can help you. Feel free to add more or click Next to continue.
-            </p>
-          </div>
-        )}
-        
-        {!hasExistingProfile && isProfileComplete && profileDepth === 'high' && (
-          <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
-            <p className="text-sm text-green-300">
-              ✅ <strong>Great profile!</strong> You've provided rich context ({totalWordCount}+ words). 
-              The AI has plenty to work with. Click Next when ready!
+        {!hasExistingProfile && isProfileComplete && (
+          <div className={`mt-4 p-3 border rounded-lg ${
+            profileDepth === 'high' 
+              ? 'bg-green-500/10 border-green-500/30' 
+              : 'bg-yellow-500/10 border-yellow-500/30'
+          }`}>
+            <p className={`text-sm ${
+              profileDepth === 'high' ? 'text-green-300' : 'text-yellow-300'
+            }`}>
+              {profileDepth === 'high' 
+                ? "✅ Great profile! The AI has what it needs." 
+                : "💡 Profile has the basics, but could be richer."}
             </p>
           </div>
         )}
@@ -327,56 +322,91 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
         <div ref={bottomRef} />
       </div>
 
-      <div className="p-4 bg-black/30 backdrop-blur-sm border-t border-white/5">
-        {showDebug && (
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-gray-500 mb-2">
-            <span className={`w-2 h-2 rounded-full ${isStreaming ? "bg-yellow-300 animate-pulse" : "bg-emerald-300"}`} />
-            {isStreaming ? "Agent drafting…" : "Ready"}
+      {/* Input Area */}
+      <div className="p-4 bg-black/80 backdrop-blur-md border-t border-white/10">
+        {/* Status/Next Area */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-gray-500">
+            <span className={`w-1.5 h-1.5 rounded-full ${isStreaming ? "bg-yellow-300 animate-pulse" : "bg-emerald-500"}`} />
+            {isStreaming ? "Thinking..." : "Ready"}
           </div>
-        )}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 bg-white/5 rounded-lg px-4 py-2 border border-white/10 focus-within:border-yellow-400/50 transition-colors">
-            <input
-              onKeyDown={handleKeyDown}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              type="text"
-              placeholder={placeholder}
-              className="flex-1 bg-transparent text-white placeholder-gray-600 outline-none min-w-0"
-              autoComplete="off"
-              style={{ WebkitTextFillColor: "#fff" }} // Force white text on iOS
-            />
-            <label className="relative cursor-pointer">
+
+          {isProfileComplete && (
+            <button
+              onClick={onComplete}
+              className="flex items-center gap-2 px-4 py-1.5 bg-green-500/20 text-green-400 border border-green-500/50 rounded-full text-xs font-bold hover:bg-green-500/30 transition-all shadow-[0_0_15px_rgba(74,222,128,0.1)] animate-pulse"
+            >
+              NEXT STEP →
+            </button>
+          )}
+        </div>
+
+        {/* Input Box */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-end gap-2 bg-white/5 rounded-xl p-2 border border-white/10 focus-within:border-yellow-400/50 focus-within:bg-white/10 transition-all">
+            
+            {/* File Upload Button */}
+            <label className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-white/10 cursor-pointer transition-colors group shrink-0" title="Upload PDF">
               <input
                 type="file"
                 accept=".pdf"
                 onChange={handleFileUpload}
                 disabled={uploadingFile}
-                className="absolute inset-0 opacity-0 cursor-pointer"
+                className="hidden"
               />
-              <div className={`flex items-center gap-1 px-2 py-1 text-xs font-medium transition-colors ${
-                uploadingFile 
-                  ? "text-gray-600 cursor-not-allowed" 
-                  : "text-gray-400 hover:text-yellow-400"
-              }`}>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+              {uploadingFile ? (
+                <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <svg className="w-5 h-5 text-gray-400 group-hover:text-yellow-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                 </svg>
-                PDF
-              </div>
+              )}
             </label>
+
+            {/* Text Input */}
+            <textarea
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder={placeholder}
+              rows={1}
+              className="flex-1 bg-transparent text-white placeholder-gray-500 outline-none min-w-0 py-2.5 text-sm resize-none max-h-32 overflow-y-auto"
+              style={{ WebkitTextFillColor: "#fff" }}
+              onInput={(e) => {
+                const target = e.target as HTMLTextAreaElement;
+                target.style.height = 'auto';
+                target.style.height = Math.min(target.scrollHeight, 128) + 'px';
+              }}
+            />
+
+            {/* Send Button */}
             <button
               onClick={handleSend}
               disabled={!draft.trim()}
-              className={`font-bold transition-colors ${
-                !draft.trim() ? "text-gray-600 cursor-not-allowed" : "text-yellow-400 hover:text-yellow-300"
+              className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all shrink-0 ${
+                draft.trim() 
+                  ? "bg-yellow-400 text-black hover:bg-yellow-300 shadow-lg shadow-yellow-400/20" 
+                  : "bg-white/5 text-gray-600 cursor-not-allowed"
               }`}
             >
-              SEND
+              <svg className="w-4 h-4 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
             </button>
           </div>
-          <div className="text-[10px] text-gray-500 px-1">
-            💡 Tip: Upload PDFs like your resume, pitch deck, or other documents to provide more context
+          
+          <div className="flex items-center justify-between px-1">
+            <span className="text-[10px] text-gray-500">
+              💡 Upload resume/deck for context
+            </span>
+            <span className="text-[10px] text-gray-600">
+              ⏎ to send
+            </span>
           </div>
         </div>
       </div>
