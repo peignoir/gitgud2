@@ -207,15 +207,15 @@ export const OnboardingWizard = () => {
   );
 
   const colorToTokens = (color: string | undefined) => {
-    // Map colors to actual hex values for Safari compatibility
+    // Map colors to vibrant, distinct pastel colors with good contrast
     const colorMap: Record<string, { hex: string; pastel: string }> = {
-      "text-yellow-300": { hex: "#fde047", pastel: "rgba(253, 224, 71, 0.4)" },
-      "text-amber-300": { hex: "#fbbf24", pastel: "rgba(251, 191, 36, 0.4)" },
-      "text-cyan-300": { hex: "#67e8f9", pastel: "rgba(103, 232, 249, 0.4)" },
-      "text-rose-300": { hex: "#fda4af", pastel: "rgba(253, 164, 175, 0.4)" },
-      "text-violet-300": { hex: "#c4b5fd", pastel: "rgba(196, 181, 253, 0.4)" },
-      "text-emerald-300": { hex: "#6ee7b7", pastel: "rgba(110, 231, 183, 0.4)" },
-      "text-sky-300": { hex: "#7dd3fc", pastel: "rgba(125, 211, 252, 0.4)" }
+      "text-yellow-300": { hex: "#fbbf24", pastel: "rgba(251, 191, 36, 0.6)" }, // Strong yellow
+      "text-amber-300": { hex: "#f97316", pastel: "rgba(249, 115, 22, 0.5)" }, // Vibrant orange  
+      "text-cyan-300": { hex: "#06b6d4", pastel: "rgba(6, 182, 212, 0.5)" }, // Cool cyan
+      "text-rose-300": { hex: "#f43f5e", pastel: "rgba(244, 63, 94, 0.5)" }, // Bright red
+      "text-violet-300": { hex: "#8b5cf6", pastel: "rgba(139, 92, 246, 0.5)" }, // Deep purple
+      "text-emerald-300": { hex: "#10b981", pastel: "rgba(16, 185, 129, 0.5)" }, // Fresh green
+      "text-sky-300": { hex: "#0ea5e9", pastel: "rgba(14, 165, 233, 0.5)" } // Bright blue
     };
     
     const mapping = colorMap[color || "text-yellow-300"];
@@ -268,7 +268,7 @@ export const OnboardingWizard = () => {
                 } ${isActive ? "" : "border border-white/25"}`}
                 style={{
                   backgroundColor: isActive ? tokens.pastel : "transparent",
-                  color: isActive ? "white" : "rgba(255, 255, 255, 0.7)"
+                  color: isActive ? "#ffffff" : "rgba(255, 255, 255, 0.7)"
                 }}
                 onClick={() => handleStageSelect(stageKey)}
                 disabled={!isComplete && !isActive}
@@ -276,9 +276,9 @@ export const OnboardingWizard = () => {
                 <div
                   className="h-10 w-10 rounded-2xl border flex items-center justify-center text-sm font-semibold"
                   style={{
-                    borderColor: isActive ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0.2)",
-                    backgroundColor: isActive ? "rgba(0, 0, 0, 0.2)" : "transparent",
-                    color: isActive ? "white" : "rgba(255, 255, 255, 0.8)"
+                    borderColor: isActive ? "rgba(255, 255, 255, 0.2)" : "rgba(255, 255, 255, 0.2)",
+                    backgroundColor: isActive ? "rgba(0, 0, 0, 0.3)" : "transparent",
+                    color: isActive ? "#ffffff" : "rgba(255, 255, 255, 0.8)"
                   }}
                 >
                   {index + 1}
@@ -287,7 +287,7 @@ export const OnboardingWizard = () => {
                   <p
                     className="text-[10px] uppercase tracking-[0.3em]"
                     style={{
-                      color: isActive ? "rgba(255, 255, 255, 0.8)" : "rgba(255, 255, 255, 0.4)"
+                      color: isActive ? "#ffffff" : "rgba(255, 255, 255, 0.4)"
                     }}
                   >
                     {meta.badge || `Stage ${index + 1}`}
@@ -295,7 +295,7 @@ export const OnboardingWizard = () => {
                   <p 
                     className="text-sm font-semibold"
                     style={{
-                      color: isActive ? "white" : "rgba(255, 255, 255, 0.9)"
+                      color: isActive ? "#ffffff" : "rgba(255, 255, 255, 0.9)"
                     }}
                   >
                     {meta.title}
