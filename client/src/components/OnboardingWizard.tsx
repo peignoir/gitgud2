@@ -244,7 +244,7 @@ export const OnboardingWizard = () => {
           // If active, we use the colored pastel fill.
           // If not active (future or past), we use the transparent outline look.
           const pillClasses = isActive
-            ? `${tokens.bg} text-black shadow-lg border border-transparent`
+            ? `${tokens.pastel} text-white shadow-lg border border-transparent`
             : "bg-transparent border border-white/25 text-white/70";
             
           const connectorClasses = currentStageIndex >= index ? tokens.bg : "bg-white/20";
@@ -261,7 +261,7 @@ export const OnboardingWizard = () => {
                 <div
                   className={`h-10 w-10 rounded-2xl border ${
                     isActive
-                      ? "border-black/20 bg-black/10 text-black"
+                      ? "border-white/10 bg-black/20 text-white"
                       : "border-white/20 bg-transparent text-white/80"
                   } flex items-center justify-center text-sm font-semibold`}
                 >
@@ -270,12 +270,12 @@ export const OnboardingWizard = () => {
                 <div>
                   <p
                     className={`text-[10px] uppercase tracking-[0.3em] ${
-                      isActive ? "text-black/60" : "text-white/40"
+                      isActive ? "text-white/80" : "text-white/40"
                     }`}
                   >
                     {meta.badge || `Stage ${index + 1}`}
                   </p>
-                  <p className={`text-sm font-semibold ${isActive ? "text-black" : "text-white/90"}`}>
+                  <p className={`text-sm font-semibold ${isActive ? "text-white" : "text-white/90"}`}>
                     {meta.title}
                   </p>
                 </div>
