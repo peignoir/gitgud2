@@ -40,21 +40,24 @@ export const Layout: React.FC<LayoutProps> = ({ children, onReset, step = 0, tot
               style={{ width: `${(step / totalSteps) * 100}%` }}
             />
           </div>
-          {stepTitle && (
-             <div className="px-4 py-3 flex items-center justify-between bg-[#0e111b]">
-               <div className="flex flex-col">
-                 <span className="text-[10px] text-gray-500 uppercase tracking-widest mb-0.5">
-                   Step {step} of {totalSteps}
-                 </span>
-                 <span className="text-sm font-bold text-yellow-400 uppercase tracking-wider">
-                   {stepTitle}
-                 </span>
-               </div>
-               <div className="text-[10px] text-gray-600 font-mono">
-                 {Math.round((step / totalSteps) * 100)}%
-               </div>
+          <div className="px-4 py-3 flex items-center justify-between bg-[#0e111b]">
+             <div className="flex flex-col">
+               <span className="text-[10px] text-gray-500 uppercase tracking-widest mb-0.5">
+                 Step {step} of {totalSteps}
+               </span>
+               <span className="text-sm font-bold text-yellow-400 uppercase tracking-wider">
+                 {stepTitle || "Loading..."}
+               </span>
              </div>
-          )}
+             <div className="flex gap-1">
+                {Array.from({ length: totalSteps }).map((_, i) => (
+                  <div 
+                    key={i} 
+                    className={`w-1.5 h-1.5 rounded-full ${i + 1 <= step ? "bg-yellow-400" : "bg-gray-800"}`}
+                  />
+                ))}
+             </div>
+           </div>
         </div>
       )}
 

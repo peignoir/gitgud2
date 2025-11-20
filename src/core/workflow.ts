@@ -1281,7 +1281,7 @@ async function getOrCreateConversationId(userId: string, force = false): Promise
     }
   }
 
-  const newId = await startOpenAIConversationsSession(openai);
+  const newId = await startOpenAIConversationsSession(openai as any);
   saveConversationIdToCache(userId, newId);
   return newId;
 }
@@ -1542,8 +1542,10 @@ async function runIdeationFlow(userId: string, question: string) {
   await ensureConversationSession(userId);
   await refreshLongTermMemory(userId);
 
-  // 1. Research Context (only if not skipped, but usually good to have fresh trends)
-  await runResearchAgent(userId, question);
+  // 1. Research Context
+  // If question is short/generic, force a trend search
+  const effectiveQuestion = question.length < 10 ? "What are the latest startup trends in my sector?" : question;
+  await runResearchAgent(userId, effectiveQuestion);
   
   // 2. Ideation Mentor
   announceSection("ideation", "YC Ideation Partner");
