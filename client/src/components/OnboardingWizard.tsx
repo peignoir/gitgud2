@@ -207,12 +207,23 @@ export const OnboardingWizard = () => {
   );
 
   const colorToTokens = (color: string | undefined) => {
-    if (!color) {
-      return { bg: "bg-white", pastel: "bg-white/80", text: "text-black" };
-    }
-    const pastel = color.replace("text-", "bg-") + "/40";
-    const solid = color.replace("text-", "bg-");
-    return { bg: solid, pastel, text: color.replace("text-", "text-") };
+    // Map colors to actual hex values for Safari compatibility
+    const colorMap: Record<string, { hex: string; pastel: string }> = {
+      "text-yellow-300": { hex: "#fde047", pastel: "rgba(253, 224, 71, 0.4)" },
+      "text-amber-300": { hex: "#fbbf24", pastel: "rgba(251, 191, 36, 0.4)" },
+      "text-cyan-300": { hex: "#67e8f9", pastel: "rgba(103, 232, 249, 0.4)" },
+      "text-rose-300": { hex: "#fda4af", pastel: "rgba(253, 164, 175, 0.4)" },
+      "text-violet-300": { hex: "#c4b5fd", pastel: "rgba(196, 181, 253, 0.4)" },
+      "text-emerald-300": { hex: "#6ee7b7", pastel: "rgba(110, 231, 183, 0.4)" },
+      "text-sky-300": { hex: "#7dd3fc", pastel: "rgba(125, 211, 252, 0.4)" }
+    };
+    
+    const mapping = colorMap[color || "text-yellow-300"];
+    return {
+      hex: mapping.hex,
+      pastel: mapping.pastel,
+      tailwindColor: color || "text-yellow-300"
+    };
   };
   const currentConfig = stepConfig[step];
   const currentStageIndex = stageOrder.indexOf(step);
@@ -241,41 +252,52 @@ export const OnboardingWizard = () => {
           const isComplete = currentStageIndex > index;
           const tokens = colorToTokens(meta.color ?? "text-yellow-300");
           
-          // If active, we use the colored pastel fill.
-          // If not active (future or past), we use the transparent outline look.
-          const pillClasses = isActive
-            ? `${tokens.pastel} text-white shadow-lg border border-transparent`
-            : "bg-transparent border border-white/25 text-white/70";
-            
-          const connectorClasses = currentStageIndex >= index ? tokens.bg : "bg-white/20";
           return (
             <div key={stageKey} className="flex items-center gap-4 min-w-max">
-              {index > 0 && <div className={`h-px w-8 ${connectorClasses}`} />}
+              {index > 0 && (
+                <div 
+                  className="h-px w-8"
+                  style={{
+                    backgroundColor: currentStageIndex >= index ? tokens.hex : "rgba(255, 255, 255, 0.2)"
+                  }}
+                />
+              )}
               <button
-                className={`flex items-center gap-3 rounded-3xl px-3 py-2 text-left transition ${pillClasses} ${
+                className={`flex items-center gap-3 rounded-3xl px-3 py-2 text-left transition shadow-lg ${
                   !isActive && !isComplete ? "opacity-70" : ""
-                }`}
+                } ${isActive ? "" : "border border-white/25"}`}
+                style={{
+                  backgroundColor: isActive ? tokens.pastel : "transparent",
+                  color: isActive ? "white" : "rgba(255, 255, 255, 0.7)"
+                }}
                 onClick={() => handleStageSelect(stageKey)}
                 disabled={!isComplete && !isActive}
               >
                 <div
-                  className={`h-10 w-10 rounded-2xl border ${
-                    isActive
-                      ? "border-white/10 bg-black/20 text-white"
-                      : "border-white/20 bg-transparent text-white/80"
-                  } flex items-center justify-center text-sm font-semibold`}
+                  className="h-10 w-10 rounded-2xl border flex items-center justify-center text-sm font-semibold"
+                  style={{
+                    borderColor: isActive ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0.2)",
+                    backgroundColor: isActive ? "rgba(0, 0, 0, 0.2)" : "transparent",
+                    color: isActive ? "white" : "rgba(255, 255, 255, 0.8)"
+                  }}
                 >
                   {index + 1}
                 </div>
                 <div>
                   <p
-                    className={`text-[10px] uppercase tracking-[0.3em] ${
-                      isActive ? "text-white/80" : "text-white/40"
-                    }`}
+                    className="text-[10px] uppercase tracking-[0.3em]"
+                    style={{
+                      color: isActive ? "rgba(255, 255, 255, 0.8)" : "rgba(255, 255, 255, 0.4)"
+                    }}
                   >
                     {meta.badge || `Stage ${index + 1}`}
                   </p>
-                  <p className={`text-sm font-semibold ${isActive ? "text-white" : "text-white/90"}`}>
+                  <p 
+                    className="text-sm font-semibold"
+                    style={{
+                      color: isActive ? "white" : "rgba(255, 255, 255, 0.9)"
+                    }}
+                  >
                     {meta.title}
                   </p>
                 </div>
