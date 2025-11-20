@@ -210,7 +210,7 @@ export const OnboardingWizard = () => {
     if (!color) {
       return { bg: "bg-white", pastel: "bg-white/80", text: "text-black" };
     }
-    const pastel = color.replace("text-", "bg-") + "/20";
+    const pastel = color.replace("text-", "bg-") + "/40";
     const solid = color.replace("text-", "bg-");
     return { bg: solid, pastel, text: color.replace("text-", "text-") };
   };
