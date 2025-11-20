@@ -238,40 +238,52 @@ export const OnboardingWizard = () => {
   };
 
   const stageNav = (
-    <div className="px-4 py-4">
-      <div className="flex justify-center items-center gap-2">
-        {stageOrder.map((stageKey, index) => {
+    <div className="px-4 py-3 overflow-x-auto">
+      <div className="flex items-center gap-3 min-w-max">
+        {stageOrder.slice(1).map((stageKey, idx) => {
+          const index = idx + 1; // Skip login step
+          const meta = stepConfig[stageKey];
           const isActive = stageKey === step;
           const isComplete = currentStageIndex > index;
           const isPending = currentStageIndex < index;
+          const tokens = colorToTokens(meta.color);
           
           return (
             <React.Fragment key={stageKey}>
+              {idx > 0 && (
+                <div className={`h-px w-8 ${isComplete ? "bg-green-500" : "bg-gray-700"}`} />
+              )}
               <button
-                className={`relative flex items-center justify-center w-10 h-10 rounded-full transition-all ${
-                  isComplete ? "bg-green-500" : isActive ? "bg-blue-500" : "bg-gray-700"
-                } ${isPending ? "opacity-50" : ""}`}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
+                  isComplete 
+                    ? "bg-green-500/20 text-green-400 border border-green-500/50" 
+                    : isActive 
+                    ? "border border-transparent shadow-lg"
+                    : "bg-gray-800/50 text-gray-400 border border-gray-700"
+                } ${isPending ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                style={isActive && !isComplete ? {
+                  backgroundColor: tokens.pastel,
+                  color: "#ffffff",
+                  borderColor: tokens.hex
+                } : {}}
                 onClick={() => handleStageSelect(stageKey)}
                 disabled={isPending}
               >
                 {isComplete ? (
-                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
+                  <span className="flex items-center gap-1.5">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    {meta.title}
+                  </span>
                 ) : (
-                  <span className="text-white font-bold text-sm">{index + 1}</span>
+                  meta.title
                 )}
               </button>
-              {index < stageOrder.length - 1 && (
-                <div className={`w-12 h-0.5 ${currentStageIndex > index ? "bg-green-500" : "bg-gray-700"}`} />
-              )}
             </React.Fragment>
           );
         })}
       </div>
-      <p className="text-center text-sm text-gray-400 mt-2">
-        {stepConfig[step].title}
-      </p>
     </div>
   );
 
