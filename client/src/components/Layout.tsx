@@ -29,8 +29,8 @@ export const Layout: React.FC<LayoutProps> = ({
 
   return (
     <div className={`flex flex-col h-[100dvh] ${chromeTone} text-white font-mono overflow-hidden`}>
-      {/* Sticky Header Section */}
-      <div className="sticky top-0 z-50 bg-[#0e111b] border-b border-white/10">
+      {/* Fixed Header Section */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-[#0e111b] border-b border-white/10">
         {/* Header */}
         <header className="flex items-center justify-between px-4 py-3 bg-[#0e111b]/95 backdrop-blur-sm">
           <div className="flex items-center gap-2">
@@ -87,14 +87,17 @@ export const Layout: React.FC<LayoutProps> = ({
         )}
       </div>
 
-      {hero && (
-        <section className="border-b border-white/5">{hero}</section>
-      )}
+      {/* Content below fixed header */}
+      <div className="flex flex-col flex-1" style={{paddingTop: "160px"}}> {/* Approximate header height */}
+        {hero && (
+          <section className="border-b border-white/5">{hero}</section>
+        )}
 
-      {/* Main Content */}
-      <main className={`flex-1 overflow-y-auto relative ${contentClassName}`}>
-        {children}
-      </main>
+        {/* Main Content */}
+        <main className={`flex-1 overflow-y-auto relative ${contentClassName}`}>
+          {children}
+        </main>
+      </div>
     </div>
   );
 };
