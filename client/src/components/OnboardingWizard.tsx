@@ -68,11 +68,11 @@ export const OnboardingWizard = () => {
         index: 0,
         title: "Login",
         color: "text-yellow-300",
-        badge: "",
-        headline: "",
-        description: "",
+        badge: "Stage 1 · Welcome",
+        headline: "GitGud Accelerator",
+        description: "Your AI-powered path from idea to execution in 9 days and 90 minutes.",
         instructions: [],
-        gradient: ""
+        gradient: "from-yellow-500/30 via-yellow-400/5 to-transparent"
       },
       profile: {
         index: 1,
@@ -343,7 +343,7 @@ export const OnboardingWizard = () => {
       contentClassName={currentConfig.contentClassName}
     >
       {step === "login" && (
-        <div className="flex h-full items-center justify-center px-4 py-8">
+        <div className="flex flex-1 items-center justify-center px-4 py-8 min-h-0">
           <div className="w-full max-w-md">
             <LoginScreen onLogin={handleLogin} />
           </div>
