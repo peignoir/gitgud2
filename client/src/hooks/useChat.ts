@@ -13,7 +13,14 @@ const seedMessage: ChatMessage = {
   content: "Hey founder! Drop a question about fundraising, vehicles, or YC style execution."
 };
 
+// In production, this needs to point to your deployed API server
+// For local testing, ensure the API server is running on port 4000
 const API_BASE_URL = import.meta.env.VITE_API_URL || "";
+
+// Show a warning if API URL is not configured in production
+if (!API_BASE_URL && import.meta.env.PROD) {
+  console.warn("API_URL not configured. The app needs an API server running. Please set VITE_API_URL environment variable.");
+}
 
 export function useChat(userId?: string, stepId?: string) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -96,15 +103,24 @@ export function useChat(userId?: string, stepId?: string) {
         return next;
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Stream error:", error);
       setMessages((prev) => {
         const next = [...prev];
         const last = next[next.length - 1];
+        let errorMessage = "Connection error. Please try again.";
+        
+        // Provide more specific error messages
+        if (error.message?.includes('404') || error.message?.includes('NOT_FOUND')) {
+          errorMessage = "⚠️ Cannot connect to the API server. To use this app:\n\n1. Run the backend: npm run api\n2. Make sure it's running on port 4000\n3. For production, set VITE_API_URL to your API server URL";
+        } else if (!API_BASE_URL && import.meta.env.PROD) {
+          errorMessage = "⚠️ API URL not configured. Please set VITE_API_URL environment variable to your API server URL.";
+        }
+        
         next[next.length - 1] = {
           id: crypto.randomUUID(),
           role: "assistant",
-          content: "Connection error. Please try again."
+          content: errorMessage
         };
         return next;
       });

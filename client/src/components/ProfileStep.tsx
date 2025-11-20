@@ -49,25 +49,75 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
     strengths?: string;
     gaps?: string;
   }>({});
+  const [hasExistingProfile, setHasExistingProfile] = useState(false);
+  const [memoryCheckDone, setMemoryCheckDone] = useState(false);
 
   // Auto-scroll
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Check for existing memory on mount
+  useEffect(() => {
+    // Look for signals in the first assistant message that memory exists
+    const firstAssistantMsg = messages.find(m => m.role === "assistant");
+    if (firstAssistantMsg && !memoryCheckDone) {
+      setMemoryCheckDone(true);
+      
+      // Check if the message indicates existing knowledge
+      const content = firstAssistantMsg.content.toLowerCase();
+      const knowledgeIndicators = [
+        "i already know",
+        "i remember you",
+        "according to my memory",
+        "from what i know about you",
+        "based on our previous",
+        "we've discussed",
+        "you've told me",
+        "franck" // Specific name recognition
+      ];
+      
+      const hasKnowledge = knowledgeIndicators.some(indicator => content.includes(indicator));
+      
+      if (hasKnowledge) {
+        setHasExistingProfile(true);
+        // Set some default profile data to indicate completion
+        setProfileData({
+          founder: "Franck Nouyrigat",
+          background: "Pre-existing profile",
+          stage: "Known",
+          goals: "Known"
+        });
+      }
+    }
+  }, [messages, memoryCheckDone]);
+
   // Extract profile data from messages
   useEffect(() => {
-    const lastMessage = messages.filter(m => m.role === "assistant").pop();
-    if (lastMessage?.content) {
-      const jsonMatch = lastMessage.content.match(/```json[^`]*({[^`]+})[^`]*```/);
-      if (jsonMatch) {
-        try {
-          const data = JSON.parse(jsonMatch[1]);
-          if (data.founder || data.background || data.stage || data.goals) {
-            setProfileData(data);
+    // Look through all assistant messages for profile data
+    for (const msg of messages.filter(m => m.role === "assistant").reverse()) {
+      if (msg.content) {
+        // Try multiple patterns to find JSON
+        const patterns = [
+          /```json[^`]*({[^`]+})[^`]*```/s,
+          /\{[^}]*"founder"[^}]*\}/s,
+          /\{\s*"founder"[^}]+\}/s
+        ];
+        
+        for (const pattern of patterns) {
+          const match = msg.content.match(pattern);
+          if (match) {
+            try {
+              const jsonStr = match[0].replace(/```json|```/g, '').trim();
+              const data = JSON.parse(jsonStr);
+              if (data.founder || data.background || data.stage || data.goals) {
+                setProfileData(prev => ({ ...prev, ...data }));
+                console.log('Extracted profile data:', data);
+              }
+            } catch (e) {
+              console.log('Failed to parse JSON:', e);
+            }
           }
-        } catch (e) {
-          // Ignore parse errors
         }
       }
     }
@@ -116,12 +166,27 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
   // Calculate profile completion
   const requiredFields = ['founder', 'background', 'stage', 'goals'];
   const filledFields = requiredFields.filter(field => profileData[field as keyof typeof profileData]);
-  const completionPercent = Math.round((filledFields.length / requiredFields.length) * 100);
-  const isProfileComplete = completionPercent >= 100;
+  const completionPercent = hasExistingProfile ? 100 : Math.round((filledFields.length / requiredFields.length) * 100);
+  
+  // Alternative completion check: if user has had substantial back-and-forth
+  const userMessageCount = messages.filter(m => m.role === "user").length;
+  const hasSubstantialConversation = userMessageCount >= 3;
+  
+  // Show Next button if profile is complete OR user has had enough interaction OR has existing profile
+  const isProfileComplete = hasExistingProfile || completionPercent >= 100 || (completionPercent >= 50 && hasSubstantialConversation);
   
   // Calculate profile depth (word count as proxy)
   const wordCount = Object.values(profileData).join(' ').split(/\s+/).filter(Boolean).length;
-  const profileDepth = wordCount < 50 ? 'low' : wordCount < 150 ? 'medium' : 'high';
+  // Also count user's total input
+  const userWordCount = messages
+    .filter(m => m.role === "user")
+    .map(m => m.content)
+    .join(' ')
+    .split(/\s+/)
+    .filter(Boolean).length;
+  
+  const totalWordCount = hasExistingProfile ? 200 : (wordCount > 0 ? wordCount : userWordCount); // Assume existing profiles are "high" depth
+  const profileDepth = totalWordCount < 50 ? 'low' : totalWordCount < 150 ? 'medium' : 'high';
   const depthColor = profileDepth === 'low' ? 'text-yellow-500' : profileDepth === 'medium' ? 'text-blue-500' : 'text-green-500';
   const depthEmoji = profileDepth === 'low' ? '📝' : profileDepth === 'medium' ? '📊' : '🎯';
 
@@ -137,16 +202,16 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
           </div>
           <div className="flex items-center gap-3">
             {/* Profile Completion Indicator */}
-            {completionPercent > 0 && (
+            {(completionPercent > 0 || userMessageCount > 0) && (
               <div className="flex items-center gap-2 text-xs">
                 <div className="w-20 h-1.5 bg-gray-800 rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-gradient-to-r from-yellow-500 to-green-500 transition-all duration-500"
-                    style={{ width: `${completionPercent}%` }}
+                    style={{ width: `${Math.max(completionPercent, userMessageCount * 25)}%` }}
                   />
                 </div>
                 <span className={`${depthColor}`}>
-                  {depthEmoji} {completionPercent}%
+                  {depthEmoji} {Math.max(completionPercent, Math.min(100, userMessageCount * 25))}%
                 </span>
               </div>
             )}
@@ -178,19 +243,28 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
         ))}
         
         {/* Profile completion message */}
-        {isProfileComplete && profileDepth !== 'high' && (
+        {hasExistingProfile && (
+          <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+            <p className="text-sm text-blue-300">
+              👋 <strong>Welcome back!</strong> I already have your profile from our previous sessions. 
+              You can update any information, add more details, or click Next to continue.
+            </p>
+          </div>
+        )}
+        
+        {!hasExistingProfile && isProfileComplete && profileDepth !== 'high' && (
           <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
             <p className="text-sm text-yellow-300">
-              💡 <strong>Tip:</strong> Your profile is complete but {profileDepth === 'low' ? 'quite brief' : 'could use more detail'}. 
+              💡 <strong>Tip:</strong> Your profile has the basics but {profileDepth === 'low' ? 'could use more detail' : 'could be richer'}. 
               {' '}The more context you share, the better the AI can help you. Feel free to add more or click Next to continue.
             </p>
           </div>
         )}
         
-        {isProfileComplete && profileDepth === 'high' && (
+        {!hasExistingProfile && isProfileComplete && profileDepth === 'high' && (
           <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
             <p className="text-sm text-green-300">
-              ✅ <strong>Great profile!</strong> You've provided rich context ({wordCount}+ words). 
+              ✅ <strong>Great profile!</strong> You've provided rich context ({totalWordCount}+ words). 
               The AI has plenty to work with. Click Next when ready!
             </p>
           </div>
