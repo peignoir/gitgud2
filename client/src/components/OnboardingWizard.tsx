@@ -51,20 +51,23 @@ export const OnboardingWizard = () => {
     );
   }
 
-  const stepMap: Record<Step, number> = {
-    login: 0,
-    profile: 1,
-    idea: 2,
-    sprint: 3,
-    vibecelerator: 4,
-    result: 5,
-    console: 6
+  const stepConfig: Record<Step, { index: number; title: string }> = {
+    login: { index: 0, title: "Login" },
+    profile: { index: 1, title: "Profile Builder" },
+    idea: { index: 2, title: "Ideation Lab" },
+    sprint: { index: 3, title: "90min Sprint" },
+    vibecelerator: { index: 4, title: "9-Day Vibecelerator" },
+    result: { index: 5, title: "Verdict" },
+    console: { index: 6, title: "Console" }
   };
+
+  const currentConfig = stepConfig[step];
 
   return (
     <Layout 
-      step={stepMap[step]} 
+      step={currentConfig.index} 
       totalSteps={6} 
+      stepTitle={currentConfig.title}
       onReset={handleReset}
     >
       {step === "profile" && (

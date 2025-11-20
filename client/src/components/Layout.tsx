@@ -5,9 +5,10 @@ interface LayoutProps {
   onReset?: () => void;
   step?: number;
   totalSteps?: number;
+  stepTitle?: string;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ children, onReset, step = 0, totalSteps = 5 }) => {
+export const Layout: React.FC<LayoutProps> = ({ children, onReset, step = 0, totalSteps = 5, stepTitle }) => {
   return (
     <div className="flex flex-col h-[100dvh] bg-[#0e111b] text-white font-mono overflow-hidden">
       {/* Header */}
@@ -30,13 +31,30 @@ export const Layout: React.FC<LayoutProps> = ({ children, onReset, step = 0, tot
         </div>
       </header>
 
-      {/* Progress Bar */}
+      {/* Progress Bar & Step Title */}
       {totalSteps > 0 && step > 0 && (
-        <div className="w-full h-1 bg-gray-800">
-          <div 
-            className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400 transition-all duration-500 ease-out"
-            style={{ width: `${(step / totalSteps) * 100}%` }}
-          />
+        <div className="bg-[#0e111b] border-b border-white/5">
+          <div className="w-full h-1 bg-gray-800">
+            <div 
+              className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400 transition-all duration-500 ease-out"
+              style={{ width: `${(step / totalSteps) * 100}%` }}
+            />
+          </div>
+          {stepTitle && (
+             <div className="px-4 py-3 flex items-center justify-between bg-[#0e111b]">
+               <div className="flex flex-col">
+                 <span className="text-[10px] text-gray-500 uppercase tracking-widest mb-0.5">
+                   Step {step} of {totalSteps}
+                 </span>
+                 <span className="text-sm font-bold text-yellow-400 uppercase tracking-wider">
+                   {stepTitle}
+                 </span>
+               </div>
+               <div className="text-[10px] text-gray-600 font-mono">
+                 {Math.round((step / totalSteps) * 100)}%
+               </div>
+             </div>
+          )}
         </div>
       )}
 
@@ -47,4 +65,3 @@ export const Layout: React.FC<LayoutProps> = ({ children, onReset, step = 0, tot
     </div>
   );
 };
-

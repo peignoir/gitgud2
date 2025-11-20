@@ -12,7 +12,7 @@ import {
   OpenAIConversationsSession,
   startOpenAIConversationsSession
 } from "@openai/agents-openai";
-import MemoryClient from "mem0";
+import { MemoryClient } from "mem0";
 import OpenAI from "openai";
 import { z } from "zod";
 import { getPrompt, initializePrompts, PromptKey } from "./prompts.js";
@@ -22,9 +22,6 @@ const cwd = process.cwd();
 const mentorGuidePath = path.resolve(cwd, "docs", "yc_mentor_guide.md");
 const vectorStoreCacheDir = path.resolve(cwd, ".cache");
 const vectorStoreCachePath = path.resolve(vectorStoreCacheDir, "yc_vector_store.json");
-
-// IMPORTANT: The userId is now dynamic per request, so we can't rely on process.env.USER_ID globally
-// for path generation that happens at module level. We'll generate conversation paths dynamically.
 
 const summarySchema = z.object({
   stage: z.string().min(1),
@@ -59,12 +56,25 @@ const researchNotesSchema = z.object({
   sources: z.array(z.string()).optional()
 });
 
+const ideationResultSchema = z.object({
+  top_ideas: z.array(z.string()).optional(),
+  market_trend: z.string().optional(),
+  user_selected_idea: z.string().optional()
+});
+
+const sprintPlanSchema = z.object({
+  tasks: z.array(z.string()),
+  goal: z.string().optional()
+});
+
 type MentorLabel = "biz" | "fund" | "vehicle";
 type RouterAgentLabel = MentorLabel | "profile";
-type AgentLabel = RouterAgentLabel | "router" | "synth" | "research" | "pdf";
+type AgentLabel = RouterAgentLabel | "router" | "synth" | "research" | "pdf" | "ideation" | "sprint" | "vibecelerator";
 type FounderProfile = z.infer<typeof founderProfileSchema>;
 type RouterPlan = z.infer<typeof routerPlanSchema>;
 type ResearchNotes = z.infer<typeof researchNotesSchema>;
+type IdeationResult = z.infer<typeof ideationResultSchema>;
+type SprintPlan = z.infer<typeof sprintPlanSchema>;
 
 const colorize = (code: string) => (text: string) => `\u001b[${code}m${text}\u001b[0m`;
 
@@ -119,6 +129,24 @@ const labelStyles: Record<
     answer: colorize("96"),
     thinking: colorize("2;96"),
     heading: colorize("1;96")
+  },
+  ideation: {
+    tag: colorize("1;95")("[idea]"),
+    answer: colorize("95"),
+    thinking: colorize("2;95"),
+    heading: colorize("1;95")
+  },
+  sprint: {
+    tag: colorize("1;91")("[sprint]"),
+    answer: colorize("91"),
+    thinking: colorize("2;91"),
+    heading: colorize("1;91")
+  },
+  vibecelerator: {
+    tag: colorize("1;93")("[vibe]"),
+    answer: colorize("93"),
+    thinking: colorize("2;93"),
+    heading: colorize("1;93")
   }
 };
 
@@ -267,7 +295,7 @@ export function slashCompleter(line: string): [string[], string] {
   return [hits.length > 0 ? hits : SLASH_COMMANDS, line];
 }
 
-function announceSection(label: MentorLabel, title: string) {
+function announceSection(label: AgentLabel, title: string) {
   if (quietMode) {
     return;
   }
@@ -326,10 +354,11 @@ let founderProfiler: Agent;
 let routerAgent: Agent;
 let synthesizerAgent: Agent;
 let researchAgent: Agent;
+let ideationMentor: Agent;
+let sprintCoach: Agent;
+let vibeceleratorCoach: Agent;
 
 // Per-user state management
-// Ideally this should be in a proper database or key-value store.
-// For now, we will use in-memory maps keyed by userId.
 const userStateMap = new Map<string, {
   founderProfile: FounderProfile;
   founderIdeaBacklog: string[];
@@ -337,6 +366,8 @@ const userStateMap = new Map<string, {
   longTermMemories: string[];
   longTermMemoryHydrated: boolean;
   conversationSession: OpenAIConversationsSession | null;
+  ideationResults?: IdeationResult;
+  sprintPlan?: SprintPlan;
 }>();
 
 const LONG_TERM_MEMORY_LIMIT = 50;
@@ -623,10 +654,18 @@ const ROUTER_KEYWORDS: Record<MentorLabel, string[]> = {
   ]
 };
 
-const mentorNames: Record<MentorLabel, string> = {
+const mentorNames: Record<AgentLabel, string> = {
   biz: "YC Business & Growth Mentor",
   fund: "YC Fundraising & Market Strategy Mentor",
-  vehicle: "US VC Fund & LP Expert"
+  vehicle: "US VC Fund & LP Expert",
+  profile: "YC Founder Profiler",
+  router: "YC Router",
+  synth: "YC Mentor Synthesizer",
+  research: "YC Research Scout",
+  pdf: "PDF Intake Sentinel",
+  ideation: "YC Ideation Partner",
+  sprint: "YC Sprint Coach",
+  vibecelerator: "9-Day Vibecelerator Coach"
 };
 
 function routeMentors(userId: string, question: string): MentorLabel[] {
@@ -810,6 +849,27 @@ async function initializeMentors() {
     model: "gpt-5.1",
     tools: [tavilyTool, web, filesTool],
     instructions: getPrompt("research")
+  });
+
+  ideationMentor = new Agent({
+    name: "YC Ideation Partner",
+    model: "gpt-5.1",
+    tools: [tavilyTool, web, filesTool],
+    instructions: getPrompt("ideation")
+  });
+
+  sprintCoach = new Agent({
+    name: "YC Sprint Coach",
+    model: "gpt-5.1",
+    tools: [web, filesTool],
+    instructions: getPrompt("sprint")
+  });
+
+  vibeceleratorCoach = new Agent({
+    name: "9-Day Vibecelerator Coach",
+    model: "gpt-5.1",
+    tools: [web, filesTool],
+    instructions: getPrompt("vibecelerator")
   });
 
   pdfSummaryAgent = new Agent({
@@ -1155,7 +1215,7 @@ async function refreshLongTermMemory(userId: string, force = false) {
   try {
     const memories = await memClient.getAll({ user_id: userId, limit: LONG_TERM_MEMORY_LIMIT });
     const parsed = memories
-      .map((memory) => {
+      .map((memory: any) => {
         const candidate =
           (typeof memory.memory === "string" && memory.memory) ||
           (typeof memory.data?.memory === "string" && memory.data.memory) ||
@@ -1163,7 +1223,7 @@ async function refreshLongTermMemory(userId: string, force = false) {
           "";
         return candidate?.toString().trim();
       })
-      .filter((text): text is string => Boolean(text));
+      .filter((text: any): text is string => Boolean(text));
 
     state.longTermMemories = parsed.slice(-LONG_TERM_MEMORY_LIMIT);
     state.longTermMemoryHydrated = true;
@@ -1232,7 +1292,7 @@ async function ensureConversationSession(userId: string, force = false): Promise
     return;
   }
   const conversationId = await getOrCreateConversationId(userId, force);
-  state.conversationSession = new OpenAIConversationsSession({ conversationId, client: openai });
+  state.conversationSession = new OpenAIConversationsSession({ conversationId, client: openai as any });
 }
 
 async function resetConversationSession(userId: string): Promise<void> {
@@ -1267,7 +1327,6 @@ async function getAgentStream(
   try {
     return await run(agent, input, {
       stream: true,
-      workflowName: WORKFLOW_NAME,
       session: state.conversationSession
     });
   } catch (error) {
@@ -1283,14 +1342,14 @@ async function runSynthesizer(
   userId: string,
   question: string,
   routerPlan: RouterPlan,
-  mentorOutputs: Partial<Record<MentorLabel, string>>
+  mentorOutputs: Partial<Record<AgentLabel, string>>
 ) {
   if (!synthesizerAgent) {
     return "";
   }
 
   const specialistSections = routerPlan.mentors
-    .map((label) => `${mentorNames[label]}:\n${mentorOutputs[label]?.trim() || "(no output)"}\n`)
+    .map((label) => `${mentorNames[label]}:\n${mentorOutputs[label as AgentLabel]?.trim() || "(no output)"}\n`)
     .join("\n");
 
   const synthInput = [
@@ -1422,7 +1481,7 @@ async function runConsoleFlow(userId: string, question: string) {
   }
 
   let bizSummaryBlock = "";
-  const mentorOutputs: Partial<Record<MentorLabel, string>> = {};
+  const mentorOutputs: Partial<Record<AgentLabel, string>> = {};
 
   for (const mentor of activeMentors) {
     if (mentor === "biz") {
@@ -1467,39 +1526,83 @@ async function runProfileFlow(userId: string, question: string) {
   // The streaming output from runFounderProfiler IS the response the user sees.
 }
 
+function extractIdeationResults(text: string): IdeationResult | null {
+  const block = extractJsonBlock(text, "IDEATION_RESULTS");
+  if (!block) return null;
+  try {
+    const parsed = JSON.parse(block);
+    return ideationResultSchema.parse(parsed);
+  } catch {
+    return null;
+  }
+}
+
 async function runIdeationFlow(userId: string, question: string) {
-  if (!researchAgent || !businessGrowthMentor) throw new Error("Agents not initialized");
+  if (!researchAgent || !ideationMentor) throw new Error("Agents not initialized");
   await ensureConversationSession(userId);
   await refreshLongTermMemory(userId);
 
-  // 1. Research Context
+  // 1. Research Context (only if not skipped, but usually good to have fresh trends)
   await runResearchAgent(userId, question);
   
-  // 2. Business Mentor for Ideation
-  announceSection("biz", "YC Ideation Partner");
-  const bizInput = buildBusinessInput(userId, question + "\n\nTask: Focus on idea generation, market gaps, and validating the problem. Propose top 4 ideas if asked.");
-  await runAgentWithStreaming(businessGrowthMentor, bizInput, "biz", userId);
+  // 2. Ideation Mentor
+  announceSection("ideation", "YC Ideation Partner");
+  const ideationInput = buildBusinessInput(userId, question + "\n\nTask: Focus on idea generation. 1) Analyze market trends relevant to the founder's background. 2) Propose 4 unique, non-obvious startup ideas. 3) Allow the founder to critique them. 4) Keep response under 200 words.");
+  
+  const { fullText } = await runAgentWithStreaming(ideationMentor, ideationInput, "ideation", userId);
+  
+  // Store results
+  const results = extractIdeationResults(fullText);
+  if (results) {
+    const state = getUserState(userId);
+    state.ideationResults = results;
+    // Also push to idea backlog
+    if (results.top_ideas) {
+      for (const idea of results.top_ideas) {
+        if (!state.founderIdeaBacklog.includes(idea)) {
+          state.founderIdeaBacklog.push(idea);
+        }
+      }
+    }
+    trimList(state.founderIdeaBacklog, IDEA_BACKLOG_LIMIT);
+  }
+}
+
+function extractSprintPlan(text: string): SprintPlan | null {
+  const block = extractJsonBlock(text, "SPRINT_PLAN");
+  if (!block) return null;
+  try {
+    const parsed = JSON.parse(block);
+    return sprintPlanSchema.parse(parsed);
+  } catch {
+    return null;
+  }
 }
 
 async function runSprintFlow(userId: string, question: string) {
-  if (!businessGrowthMentor) throw new Error("Agents not initialized");
+  if (!sprintCoach) throw new Error("Agents not initialized");
   await ensureConversationSession(userId);
   await refreshLongTermMemory(userId);
 
-  announceSection("biz", "YC Sprint Coach");
-  const bizInput = buildBusinessInput(userId, question + "\n\nTask: Provide a 90-minute execution plan. Be extremely tactical. Focus on 'Do things that don't scale'.");
-  await runAgentWithStreaming(businessGrowthMentor, bizInput, "biz", userId);
+  announceSection("sprint", "YC Sprint Coach");
+  const sprintInput = buildBusinessInput(userId, question + "\n\nTask: Provide a 90-minute execution plan. Be extremely tactical. Focus on 'Do things that don't scale'.");
+  const { fullText } = await runAgentWithStreaming(sprintCoach, sprintInput, "sprint", userId);
+
+  const plan = extractSprintPlan(fullText);
+  if (plan) {
+    const state = getUserState(userId);
+    state.sprintPlan = plan;
+  }
 }
 
 async function runVibeceleratorFlow(userId: string, question: string) {
-  if (!businessGrowthMentor) throw new Error("Agents not initialized");
+  if (!vibeceleratorCoach) throw new Error("Agents not initialized");
   await ensureConversationSession(userId);
   await refreshLongTermMemory(userId);
 
-  // Placeholder: Uses Business Mentor but with a specific Vibe/Accelerator prompt injection
-  announceSection("biz", "9-Day Vibecelerator Coach");
+  announceSection("vibecelerator", "9-Day Vibecelerator Coach");
   const input = buildBusinessInput(userId, question + "\n\nTask: Guide the founder through the 9-Day Vibecelerator program. High energy, heavy on 'vibe' and momentum.");
-  await runAgentWithStreaming(businessGrowthMentor, input, "biz", userId);
+  await runAgentWithStreaming(vibeceleratorCoach, input, "vibecelerator", userId);
 }
 
 export async function handleStepRequest(stepId: string, question: string, userId: string) {
@@ -1550,6 +1653,8 @@ export async function resetUserData(userId: string): Promise<void> {
       state.founderIdeaBacklog = [];
       state.researchSourceLog = [];
       state.longTermMemories = [];
+      state.ideationResults = undefined;
+      state.sprintPlan = undefined;
       state.longTermMemoryHydrated = false;
       state.conversationSession = null;
       // Note: we don't delete the key entirely so the object reference remains valid if held elsewhere,
