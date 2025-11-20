@@ -14,12 +14,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-full px-6 animate-in fade-in duration-500">
-      <div className="w-16 h-16 bg-yellow-400 mb-8 shadow-[0_0_20px_rgba(250,204,21,0.3)]" />
-      <h1 className="text-3xl font-bold mb-2 text-center">GitGud Accelerator</h1>
-      <p className="text-gray-400 text-center mb-10 max-w-xs text-sm leading-relaxed">
-        The AI-powered vibecelerator for solo founders from idea to funding in nine days and ninety minutes. 
-</p>
+      <div className="flex flex-col items-center justify-center h-full px-6 animate-in fade-in duration-500">
+        <div className="w-16 h-16 bg-yellow-400 mb-8 shadow-[0_0_20px_rgba(250,204,21,0.3)]" />
       <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
         <div>
           <input

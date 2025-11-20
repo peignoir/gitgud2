@@ -39,7 +39,7 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
   const bottomRef = useRef<HTMLDivElement>(null);
   const seedRef = useRef(false);
   const [draft, setDraft] = useState("");
-  const [showDebug, setShowDebug] = useState(false);
+  const [showDebug, setShowDebug] = useState(false); // Always start with debug hidden
 
   // Auto-scroll
   useEffect(() => {

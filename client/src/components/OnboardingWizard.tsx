@@ -238,74 +238,40 @@ export const OnboardingWizard = () => {
   };
 
   const stageNav = (
-    <div className="px-4 py-4 bg-gradient-to-b from-[#090c15] to-transparent">
-      <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.35em] text-white/60 mb-3">
-        <span>Console Flow</span>
-        <span>
-          Stage {Math.max(currentStageIndex + 1, 1)} / {stageOrder.length}
-        </span>
-      </div>
-      <div className="flex items-center gap-4 overflow-x-auto pb-1">
+    <div className="px-4 py-4">
+      <div className="flex justify-center items-center gap-2">
         {stageOrder.map((stageKey, index) => {
-          const meta = stepConfig[stageKey];
           const isActive = stageKey === step;
           const isComplete = currentStageIndex > index;
-          const tokens = colorToTokens(meta.color ?? "text-yellow-300");
+          const isPending = currentStageIndex < index;
           
           return (
-            <div key={stageKey} className="flex items-center gap-4 min-w-max">
-              {index > 0 && (
-                <div 
-                  className="h-px w-8"
-                  style={{
-                    backgroundColor: currentStageIndex >= index ? tokens.hex : "rgba(255, 255, 255, 0.2)"
-                  }}
-                />
-              )}
+            <React.Fragment key={stageKey}>
               <button
-                className={`flex items-center gap-3 rounded-3xl px-3 py-2 text-left transition shadow-lg ${
-                  !isActive && !isComplete ? "opacity-70" : ""
-                } ${isActive ? "" : "border border-white/25"}`}
-                style={{
-                  backgroundColor: isActive ? tokens.pastel : "transparent",
-                  color: isActive ? "#ffffff" : "rgba(255, 255, 255, 0.7)"
-                }}
+                className={`relative flex items-center justify-center w-10 h-10 rounded-full transition-all ${
+                  isComplete ? "bg-green-500" : isActive ? "bg-blue-500" : "bg-gray-700"
+                } ${isPending ? "opacity-50" : ""}`}
                 onClick={() => handleStageSelect(stageKey)}
-                disabled={!isComplete && !isActive}
+                disabled={isPending}
               >
-                <div
-                  className="h-10 w-10 rounded-2xl border flex items-center justify-center text-sm font-semibold"
-                  style={{
-                    borderColor: isActive ? "rgba(255, 255, 255, 0.2)" : "rgba(255, 255, 255, 0.2)",
-                    backgroundColor: isActive ? "rgba(0, 0, 0, 0.3)" : "transparent",
-                    color: isActive ? "#ffffff" : "rgba(255, 255, 255, 0.8)"
-                  }}
-                >
-                  {index + 1}
-                </div>
-                <div>
-                  <p
-                    className="text-[10px] uppercase tracking-[0.3em]"
-                    style={{
-                      color: isActive ? "#ffffff" : "rgba(255, 255, 255, 0.4)"
-                    }}
-                  >
-                    {meta.badge || `Stage ${index + 1}`}
-                  </p>
-                  <p 
-                    className="text-sm font-semibold"
-                    style={{
-                      color: isActive ? "#ffffff" : "rgba(255, 255, 255, 0.9)"
-                    }}
-                  >
-                    {meta.title}
-                  </p>
-                </div>
+                {isComplete ? (
+                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <span className="text-white font-bold text-sm">{index + 1}</span>
+                )}
               </button>
-            </div>
+              {index < stageOrder.length - 1 && (
+                <div className={`w-12 h-0.5 ${currentStageIndex > index ? "bg-green-500" : "bg-gray-700"}`} />
+              )}
+            </React.Fragment>
           );
         })}
       </div>
+      <p className="text-center text-sm text-gray-400 mt-2">
+        {stepConfig[step].title}
+      </p>
     </div>
   );
 

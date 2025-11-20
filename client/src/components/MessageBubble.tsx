@@ -195,8 +195,9 @@ const MessageBubble = memo(({ message, showDebug = false }: MessageBubbleProps) 
         if (stripped.includes('thinking...') || stripped.includes('[research]') || 
             stripped.includes('[profile]') || stripped.match(/\[.*\]\s*thinking/i)) return false;
         
-        // Hide agent headers
-        if (stripped.match(/===.*===/)) return false;
+        // Hide agent headers and system messages
+        if (stripped.match(/===.*===/) || stripped.includes('===')) return false;
+        if (stripped.startsWith('===') || stripped.endsWith('===')) return false;
         
         // Hide JSON-related lines
         if (stripped.includes('FOUNDER_PROFILE') || stripped.includes('IDEATION_RESULTS') || 
