@@ -67,6 +67,12 @@ const sprintPlanSchema = z.object({
   goal: z.string().optional()
 });
 
+const vibeceleratorStatusSchema = z.object({
+  day: z.number().optional(),
+  challenge: z.string().optional(),
+  status: z.string().optional()
+});
+
 type MentorLabel = "biz" | "fund" | "vehicle";
 type RouterAgentLabel = MentorLabel | "profile";
 type AgentLabel = RouterAgentLabel | "router" | "synth" | "research" | "pdf" | "ideation" | "sprint" | "vibecelerator";
@@ -75,6 +81,7 @@ type RouterPlan = z.infer<typeof routerPlanSchema>;
 type ResearchNotes = z.infer<typeof researchNotesSchema>;
 type IdeationResult = z.infer<typeof ideationResultSchema>;
 type SprintPlan = z.infer<typeof sprintPlanSchema>;
+type VibeceleratorStatus = z.infer<typeof vibeceleratorStatusSchema>;
 
 const colorize = (code: string) => (text: string) => `\u001b[${code}m${text}\u001b[0m`;
 
@@ -368,6 +375,7 @@ const userStateMap = new Map<string, {
   conversationSession: OpenAIConversationsSession | null;
   ideationResults?: IdeationResult;
   sprintPlan?: SprintPlan;
+  vibeceleratorStatus?: VibeceleratorStatus;
 }>();
 
 const LONG_TERM_MEMORY_LIMIT = 50;
@@ -1581,6 +1589,17 @@ function extractSprintPlan(text: string): SprintPlan | null {
   }
 }
 
+function extractVibeceleratorStatus(text: string): VibeceleratorStatus | null {
+  const block = extractJsonBlock(text, "VIBECELERATOR_STATUS");
+  if (!block) return null;
+  try {
+    const parsed = JSON.parse(block);
+    return vibeceleratorStatusSchema.parse(parsed);
+  } catch {
+    return null;
+  }
+}
+
 async function runSprintFlow(userId: string, question: string) {
   if (!sprintCoach) throw new Error("Agents not initialized");
   await ensureConversationSession(userId);
@@ -1604,7 +1623,13 @@ async function runVibeceleratorFlow(userId: string, question: string) {
 
   announceSection("vibecelerator", "9-Day Vibecelerator Coach");
   const input = buildBusinessInput(userId, question + "\n\nTask: Guide the founder through the 9-Day Vibecelerator program. High energy, heavy on 'vibe' and momentum.");
-  await runAgentWithStreaming(vibeceleratorCoach, input, "vibecelerator", userId);
+  const { fullText } = await runAgentWithStreaming(vibeceleratorCoach, input, "vibecelerator", userId);
+
+  const status = extractVibeceleratorStatus(fullText);
+  if (status) {
+    const state = getUserState(userId);
+    state.vibeceleratorStatus = status;
+  }
 }
 
 export async function handleStepRequest(stepId: string, question: string, userId: string) {
@@ -1657,6 +1682,7 @@ export async function resetUserData(userId: string): Promise<void> {
       state.longTermMemories = [];
       state.ideationResults = undefined;
       state.sprintPlan = undefined;
+      state.vibeceleratorStatus = undefined;
       state.longTermMemoryHydrated = false;
       state.conversationSession = null;
       // Note: we don't delete the key entirely so the object reference remains valid if held elsewhere,
