@@ -227,7 +227,8 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
   const hasSubstantialConversation = userMessageCount >= 3;
   
   // Show Next button if profile is complete OR user has had enough interaction OR has existing profile OR READY signal
-  const isProfileComplete = hasExistingProfile || profileData.ready || completionPercent >= 100 || (completionPercent >= 50 && hasSubstantialConversation);
+  // Fast track: If we have founder name and background, we are good to go.
+  const isProfileComplete = hasExistingProfile || profileData.ready || (!!profileData.founder && !!profileData.background) || completionPercent >= 100 || (completionPercent >= 50 && hasSubstantialConversation);
   
   // Force show next button if user has sent enough messages (fallback)
   const showNextButton = isProfileComplete || userMessageCount >= 5;
@@ -329,9 +330,16 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
       <div className="p-4 bg-black/80 backdrop-blur-md border-t border-white/10">
           {/* Status/Next Area */}
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-gray-500">
-            <span className={`w-1.5 h-1.5 rounded-full ${isStreaming ? "bg-yellow-300 animate-pulse" : "bg-emerald-500"}`} />
-            {isStreaming ? "Thinking..." : (profileData.ready ? "Ready" : "Listening")}
+          <div className="flex flex-col justify-center">
+            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-gray-500">
+              <span className={`w-1.5 h-1.5 rounded-full ${isStreaming ? "bg-yellow-300 animate-pulse" : (showNextButton ? "bg-emerald-500" : "bg-gray-500")}`} />
+              {isStreaming ? "Thinking..." : (profileData.ready ? "Ready" : (showNextButton ? "Identity Scanned" : "Scanning Identity..."))}
+            </div>
+            {!showNextButton && !isStreaming && (
+              <span className="text-[10px] text-yellow-500 mt-1">
+                * Need name & background to continue
+              </span>
+            )}
           </div>
 
           <button
