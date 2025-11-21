@@ -37,9 +37,18 @@ export const OnboardingWizard = () => {
 
   React.useEffect(() => {
     if (typeof document === "undefined") return;
-    document.body.classList.toggle("login-mode", step === "login");
+    const body = document.body;
+    const html = document.documentElement;
+    if (step === "login") {
+      body.classList.add("login-mode");
+      html.classList.add("login-mode");
+    } else {
+      body.classList.remove("login-mode");
+      html.classList.remove("login-mode");
+    }
     return () => {
-      document.body.classList.remove("login-mode");
+      body.classList.remove("login-mode");
+      html.classList.remove("login-mode");
     };
   }, [step]);
 
@@ -318,15 +327,7 @@ export const OnboardingWizard = () => {
   );
   
   if (step === "login") {
-    return (
-      <div className="min-h-screen bg-white text-black flex flex-col">
-        <div className="flex-1 flex items-center justify-center px-4 py-8">
-          <div className="w-full max-w-md">
-            <LoginScreen onLogin={handleLogin} />
-          </div>
-        </div>
-      </div>
-    );
+    return <LoginScreen onLogin={handleLogin} />;
   }
   
   return (

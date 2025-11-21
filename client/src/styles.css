@@ -7,13 +7,19 @@
     color-scheme: dark;
   }
 
+  html, body {
+    min-height: 100%;
+  }
+
   body {
     @apply min-h-dvh bg-[#0e111b] text-white font-mono;
   }
 
-  body.login-mode {
+  body.login-mode,
+  html.login-mode {
     color-scheme: light;
-    @apply bg-white text-black;
+    background-color: #ffffff !important;
+    color: #000000 !important;
   }
 }
 
