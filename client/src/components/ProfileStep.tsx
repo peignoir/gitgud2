@@ -45,6 +45,10 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
   const [draft, setDraft] = useState("");
   const [showDebug, setShowDebug] = useState(false); // Always start with debug hidden
   const [uploadingFile, setUploadingFile] = useState(false);
+  const stripAnsi = (value: string) => value.replace(/\x1b\[[0-9;]*m/g, "");
+  const sanitize = (value?: string) =>
+    value ? stripAnsi(value).replace(/\s+/g, " ").trim() : value;
+
   const [profileData, setProfileData] = useState<{
     founder?: string;
     background?: string;
@@ -144,6 +148,7 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
       if (msg.content) {
         // detect checklist ready signal
         if (msg.content.toLowerCase().includes("[x] bio/background")) {
+          setHasExistingProfile(true);
           persistProfile((prev) => ({ ...prev, ready: true }));
         }
         // Check if message contains READY signal
@@ -170,7 +175,19 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
               const data = JSON.parse(jsonContent);
               if (data.founder || data.background || data.stage || data.goals) {
                 persistProfile(prev => {
-                  const next = { ...prev, ...data };
+                  const next = {
+                    ...prev,
+                    ...data,
+                    founder: sanitize(data.founder),
+                    background: sanitize(data.background),
+                    stage: sanitize(data.stage),
+                    goals: sanitize(data.goals),
+                    motivations: sanitize(data.motivations),
+                    strengths: sanitize(data.strengths),
+                    gaps: sanitize(data.gaps),
+                    working_style: sanitize(data.working_style),
+                    notes: sanitize(data.notes)
+                  };
                   if (next.founder && next.background) {
                     next.ready = true;
                     setHasExistingProfile(true);
@@ -188,8 +205,8 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
                 persistProfile(prev => {
                   const next = {
                     ...prev,
-                    founder: founderMatch ? founderMatch[1] : prev.founder,
-                    background: bgMatch ? bgMatch[1].replace(/\n/g, ' ') : prev.background
+                    founder: founderMatch ? sanitize(founderMatch[1]) : prev.founder,
+                    background: bgMatch ? sanitize(bgMatch[1]) : prev.background
                   };
                   if (next.founder && next.background) {
                     next.ready = true;
@@ -396,10 +413,18 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
         
         {/* Status Messages */}
         {hasExistingProfile && (
-          <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+          <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg flex flex-col gap-2">
             <p className="text-sm text-blue-300">
               👋 <strong>Welcome back!</strong> I already have your profile. Update details or click Next.
             </p>
+            {showNextButton && (
+              <button
+                onClick={onComplete}
+                className="self-start text-xs font-semibold px-3 py-1 rounded-full bg-blue-500/20 text-blue-200 border border-blue-400/50 hover:bg-blue-500/30 transition"
+              >
+                Jump to next →
+              </button>
+            )}
           </div>
         )}
         
