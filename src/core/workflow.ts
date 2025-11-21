@@ -376,6 +376,7 @@ const userStateMap = new Map<string, {
   ideationResults?: IdeationResult;
   sprintPlan?: SprintPlan;
   vibeceleratorStatus?: VibeceleratorStatus;
+  lastReset: number;
 }>();
 
 const LONG_TERM_MEMORY_LIMIT = 50;
@@ -390,7 +391,8 @@ function getUserState(userId: string) {
       researchSourceLog: [],
       longTermMemories: [],
       longTermMemoryHydrated: false,
-      conversationSession: null
+      conversationSession: null,
+      lastReset: 0
     });
   }
   return userStateMap.get(userId)!;
@@ -442,12 +444,18 @@ function extractFounderProfile(text: string): FounderProfile | null {
   }
 }
 
-function mergeFounderProfile(userId: string, update: FounderProfile | null) {
+function mergeFounderProfile(userId: string, update: FounderProfile | null, flowStart?: number) {
   if (!update) {
     return;
   }
 
   const state = getUserState(userId);
+  // Prevent writing stale data if a reset occurred after this flow started
+  if (flowStart && state.lastReset > flowStart) {
+    console.log(`[MergeProfile] Skipping stale write for user ${userId} (Reset detected)`);
+    return;
+  }
+
   state.founderProfile = {
     ...state.founderProfile,
     ...Object.fromEntries(
@@ -1090,7 +1098,7 @@ function logReasoning(label: AgentLabel, data: Record<string, unknown>) {
   console.log(`${formatLabel(label)} ${colorThinking(label, thinkingMessage)}`);
 }
 
-async function runFounderProfiler(userId: string, question: string) {
+async function runFounderProfiler(userId: string, question: string, flowStart?: number) {
   if (!founderProfiler) {
     return;
   }
@@ -1119,10 +1127,15 @@ async function runFounderProfiler(userId: string, question: string) {
 
   const { fullText } = await runAgentWithStreaming(founderProfiler, profilerInput, "profile", userId);
   const profileUpdate = extractFounderProfile(fullText);
-  mergeFounderProfile(userId, profileUpdate);
+  mergeFounderProfile(userId, profileUpdate, flowStart);
 
   // Sync specific updates to Mem0 to ensure name changes etc are remembered
   if (profileUpdate && Object.keys(profileUpdate).length > 0) {
+    const state = getUserState(userId);
+    if (flowStart && state.lastReset > flowStart) {
+        console.log("Skipping Mem0 sync (Reset detected)");
+        return;
+    }
     try {
         const updateSummary = Object.entries(profileUpdate)
             .filter(([_, v]) => v && typeof v === 'string' && v.length > 0)
@@ -1272,13 +1285,17 @@ function pushLongTermMemory(userId: string, text: string) {
   state.longTermMemoryHydrated = true;
 }
 
-async function writeLongTermMemory(userId: string, question: string, finalResponse: string) {
+async function writeLongTermMemory(userId: string, question: string, finalResponse: string, flowStart?: number) {
   const summary = finalResponse.trim();
   if (!summary) {
     return;
   }
 
   const state = getUserState(userId);
+  if (flowStart && state.lastReset > flowStart) {
+    console.log(`[WriteMemory] Skipping stale write for user ${userId} (Reset detected)`);
+    return;
+  }
 
   try {
     await memClient.add(
@@ -1469,6 +1486,7 @@ async function runResearchAgent(userId: string, question: string): Promise<void>
 // --- Dispatcher & Flows ---
 
 async function runConsoleFlow(userId: string, question: string) {
+  const flowStart = Date.now();
   if (
     !businessGrowthMentor ||
     !fundraisingMentor ||
@@ -1486,7 +1504,7 @@ async function runConsoleFlow(userId: string, question: string) {
     await runResearchAgent(userId, question);
   }
   const routerPlan = await runRouterDecision(userId, question);
-  await runFounderProfiler(userId, question);
+  await runFounderProfiler(userId, question, flowStart);
   
   const mentorsToRun = Array.from(new Set(routerPlan.mentors)) as RouterAgentLabel[];
   const activeMentors = mentorsToRun.filter((m) => m !== "profile") as MentorLabel[];
@@ -1538,7 +1556,7 @@ async function runConsoleFlow(userId: string, question: string) {
     { ...routerPlan, mentors: mentorsToRun as any }, // Cast to any to match the schema which expects MentorLabel[]
     mentorOutputs
   );
-  await writeLongTermMemory(userId, question, finalResponse);
+  await writeLongTermMemory(userId, question, finalResponse, flowStart);
 }
 
 async function runProfileFlow(userId: string, question: string) {
@@ -1653,6 +1671,11 @@ async function runVibeceleratorFlow(userId: string, question: string) {
   }
 }
 
+export async function applyManualProfileUpdate(userId: string, profile: FounderProfile): Promise<FounderProfile> {
+  mergeFounderProfile(userId, profile);
+  return getUserState(userId).founderProfile;
+}
+
 export async function handleStepRequest(stepId: string, question: string, userId: string) {
   switch (stepId) {
     case "flow_profile":
@@ -1728,6 +1751,7 @@ export async function resetUserData(userId: string): Promise<string[]> {
       state.vibeceleratorStatus = undefined;
       state.longTermMemoryHydrated = false;
       state.conversationSession = null;
+      state.lastReset = Date.now();
       logs.push("Reset local user state (profile, backlog, etc).");
     } else {
       logs.push("No active local user state found.");
