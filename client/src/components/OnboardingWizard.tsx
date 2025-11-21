@@ -308,7 +308,19 @@ export const OnboardingWizard = () => {
       )}
     </div>
   );
-
+  
+  if (step === "login") {
+    return (
+      <div className="min-h-screen bg-white text-black flex flex-col">
+        <div className="flex-1 flex items-center justify-center px-4 py-8">
+          <div className="w-full max-w-md">
+            <LoginScreen onLogin={handleLogin} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <Layout 
       step={currentConfig.index}
@@ -321,13 +333,6 @@ export const OnboardingWizard = () => {
       chromeTone={currentConfig.chromeTone}
       contentClassName={currentConfig.contentClassName}
     >
-      {step === "login" && (
-        <div className="flex flex-1 items-center justify-center px-4 py-8 min-h-0">
-          <div className="w-full max-w-md">
-            <LoginScreen onLogin={handleLogin} />
-          </div>
-        </div>
-      )}
       {step === "profile" && (
         <ProfileStep 
           userId={userId} 
