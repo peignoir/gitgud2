@@ -104,6 +104,13 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
           setProfileData(prev => ({ ...prev, ready: true }));
         }
         
+        // Detect completion signals for other flows
+        if (msg.content.includes('IDEATION_RESULTS') || 
+            msg.content.includes('SPRINT_PLAN') || 
+            msg.content.includes('VIBECELERATOR_STATUS')) {
+           setProfileData(prev => ({ ...prev, ready: true }));
+        }
+        
         // Try multiple patterns to find JSON
         const patterns = [
           /```json\s+FOUNDER_PROFILE[^`]*({[^`]+})[^`]*```/s,
@@ -227,8 +234,21 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
   const hasSubstantialConversation = userMessageCount >= 3;
   
   // Show Next button if profile is complete OR user has had enough interaction OR has existing profile OR READY signal
-  // Fast track: If we have founder name and background, we are good to go.
-  const isProfileComplete = hasExistingProfile || profileData.ready || (!!profileData.founder && !!profileData.background) || completionPercent >= 100 || (completionPercent >= 50 && hasSubstantialConversation);
+  const isProfileFlow = !flowId || flowId === 'flow_profile';
+  let isStepComplete = hasExistingProfile || profileData.ready;
+
+  if (!isStepComplete) {
+    if (isProfileFlow) {
+      // Fast track: If we have founder name and background, we are good to go.
+      isStepComplete = (!!profileData.founder && !!profileData.background) || completionPercent >= 100 || (completionPercent >= 50 && hasSubstantialConversation);
+    } else {
+      // Other flows: rely on READY signal or substantial conversation
+      isStepComplete = hasSubstantialConversation;
+    }
+  }
+  
+  // Alias for backward compatibility in JSX
+  const isProfileComplete = isStepComplete;
   
   // Force show next button if user has sent enough messages (fallback)
   const showNextButton = isProfileComplete || userMessageCount >= 5;
@@ -333,9 +353,9 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
           <div className="flex flex-col justify-center">
             <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-gray-500">
               <span className={`w-1.5 h-1.5 rounded-full ${isStreaming ? "bg-yellow-300 animate-pulse" : (showNextButton ? "bg-emerald-500" : "bg-gray-500")}`} />
-              {isStreaming ? "Thinking..." : (profileData.ready ? "Ready" : (showNextButton ? "Identity Scanned" : "Scanning Identity..."))}
+              {isStreaming ? "Thinking..." : (profileData.ready ? "Ready" : (showNextButton ? (isProfileFlow ? "Identity Scanned" : "Step Complete") : (isProfileFlow ? "Scanning Identity..." : "Waiting for input...")))}
             </div>
-            {!showNextButton && !isStreaming && (
+            {!showNextButton && !isStreaming && isProfileFlow && (
               <span className="text-[10px] text-yellow-500 mt-1">
                 * Need name & background to continue
               </span>
