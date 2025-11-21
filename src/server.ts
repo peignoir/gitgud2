@@ -20,8 +20,7 @@ import {
   getVectorStoreId,
   summarizePdfUpload,
   resetUserData,
-  handleStepRequest,
-  applyManualProfileUpdate
+  handleStepRequest
 } from "./core/workflow.js";
 import { getAllPrompts, PromptKey, setPrompt } from "./core/prompts.js";
 
@@ -212,21 +211,22 @@ app.put("/api/prompts/:id", (req, res) => {
   }
 });
 
-app.post("/api/profile", async (req, res) => {
-  const userId = req.headers["x-user-id"] as string | undefined;
-  if (!userId) {
-    res.status(400).json({ error: "Missing x-user-id header" });
-    return;
-  }
-  try {
-    await initializeWorkflow();
-    const updatedProfile = await applyManualProfileUpdate(userId, req.body?.profile ?? {});
-    res.json({ profile: updatedProfile });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to update profile.";
-    res.status(400).json({ error: message });
-  }
-});
+// app.post("/api/profile", async (req, res) => {
+//   const userId = req.headers["x-user-id"] as string | undefined;
+//   if (!userId) {
+//     res.status(400).json({ error: "Missing x-user-id header" });
+//     return;
+//   }
+//   try {
+//     await initializeWorkflow();
+//     // const updatedProfile = await applyManualProfileUpdate(userId, req.body?.profile ?? {});
+//     // res.json({ profile: updatedProfile });
+//     res.status(501).json({ error: "Not implemented yet" });
+//   } catch (error) {
+//     const message = error instanceof Error ? error.message : "Failed to update profile.";
+//     res.status(400).json({ error: message });
+//   }
+// });
 
 type FileUploadRequest = Request & { file?: Express.Multer.File };
 
