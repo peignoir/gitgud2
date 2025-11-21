@@ -111,37 +111,21 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
            setProfileData(prev => ({ ...prev, ready: true }));
         }
         
-        // Try multiple patterns to find JSON
-        const patterns = [
-          /```json\s+FOUNDER_PROFILE[^`]*({[^`]+})[^`]*```/s,
-          /```json[^`]*({[^`]+})[^`]*```/s,
-          /\{[^}]*"founder"[^}]*\}/s,
-          /\{\s*"founder"[^}]+\}/s
-        ];
-        
-        for (const pattern of patterns) {
-          const match = msg.content.match(pattern);
-          if (match) {
-            try {
-              // Extract the JSON part
-              let jsonStr = match[0];
-              // Remove markdown code blocks
-              jsonStr = jsonStr.replace(/```json\s*FOUNDER_PROFILE\s*|```json|```/g, '').trim();
-              // Extract just the object if it has a label
-              const objMatch = jsonStr.match(/\{[\s\S]*\}/);
-              if (objMatch) {
-                jsonStr = objMatch[0];
-              }
-              
-              const data = JSON.parse(jsonStr);
-              if (data.founder || data.background || data.stage || data.goals) {
-                setProfileData(prev => ({ ...prev, ...data }));
-                console.log('Extracted profile data:', data);
-              }
-            } catch (e) {
-              console.log('Failed to parse JSON:', e);
+        // Robust JSON extraction
+        try {
+          // Find JSON block specifically
+          const jsonMatch = msg.content.match(/```json\s*(?:FOUNDER_PROFILE)?\s*([\s\S]*?)\s*```/);
+          if (jsonMatch) {
+            const jsonContent = jsonMatch[1];
+            const data = JSON.parse(jsonContent);
+            
+            // If we found valid data, update state
+            if (data.founder || data.background || data.stage || data.goals) {
+              setProfileData(prev => ({ ...prev, ...data }));
             }
           }
+        } catch (e) {
+          // Fail silently on parse errors
         }
       }
     }
@@ -347,17 +331,17 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
       </div>
 
       {/* Input Area */}
-      <div className="p-4 bg-black/80 backdrop-blur-md border-t border-white/10">
+      <div className="p-4 bg-black/80 backdrop-blur-md border-t border-white/10 relative z-10">
           {/* Status/Next Area */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex flex-col justify-center">
-            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-gray-500">
-              <span className={`w-1.5 h-1.5 rounded-full ${isStreaming ? "bg-yellow-300 animate-pulse" : (showNextButton ? "bg-emerald-500" : "bg-gray-500")}`} />
-              {isStreaming ? "Thinking..." : (profileData.ready ? "Ready" : (showNextButton ? (isProfileFlow ? "Identity Scanned" : "Step Complete") : (isProfileFlow ? "Scanning Identity..." : "Waiting for input...")))}
+            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold">
+              <span className={`w-1.5 h-1.5 rounded-full ${isStreaming ? "bg-yellow-300 animate-ping" : (showNextButton ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "bg-gray-500")}`} />
+              {isStreaming ? "COOKING 🍳..." : (profileData.ready ? "READY ✨" : (showNextButton ? (isProfileFlow ? "IDENTITY LOCKED 🔒" : "STEP COMPLETE ✅") : (isProfileFlow ? "SCANNING... 📡" : "WAITING...")))}
             </div>
             {!showNextButton && !isStreaming && isProfileFlow && (
-              <span className="text-[10px] text-yellow-500 mt-1">
-                * Need name & background to continue
+              <span className="text-[10px] text-yellow-500/80 mt-1 animate-pulse">
+                * Need name & background
               </span>
             )}
           </div>
@@ -365,10 +349,10 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
           <button
             onClick={onComplete}
             disabled={!showNextButton}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+            className={`flex items-center gap-2 px-5 py-2 rounded-full text-xs font-black tracking-wide transition-all duration-300 ${
               showNextButton 
-                ? "bg-green-500/20 text-green-400 border border-green-500/50 hover:bg-green-500/30 shadow-[0_0_15px_rgba(74,222,128,0.1)] animate-pulse cursor-pointer" 
-                : "bg-white/5 text-gray-500 border border-white/10 cursor-not-allowed opacity-50"
+                ? "bg-gradient-to-r from-green-400 to-emerald-600 text-black shadow-[0_0_20px_rgba(52,211,153,0.4)] hover:shadow-[0_0_30px_rgba(52,211,153,0.6)] hover:scale-105 active:scale-95 cursor-pointer border-0" 
+                : "bg-white/5 text-gray-600 border border-white/10 cursor-not-allowed opacity-50 grayscale"
             }`}
           >
             NEXT STEP →
@@ -376,8 +360,8 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
         </div>
 
         {/* Input Box */}
-        <div className="flex flex-col gap-2">
-          <div className="flex items-end gap-2 bg-white/5 rounded-xl p-2 border border-white/10 focus-within:border-yellow-400/50 focus-within:bg-white/10 transition-all">
+        <div className="flex flex-col gap-2 group/input">
+          <div className="flex items-end gap-2 bg-black/40 rounded-xl p-2 border border-white/10 focus-within:border-yellow-400/50 focus-within:bg-white/5 transition-all duration-300 focus-within:shadow-[0_0_20px_rgba(250,204,21,0.1)]">
             
             {/* File Upload Button */}
             <label className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-white/10 cursor-pointer transition-colors group shrink-0" title="Upload PDF">
@@ -389,9 +373,9 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
                 className="hidden"
               />
               {uploadingFile ? (
-                <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
               ) : (
-                <svg className="w-5 h-5 text-gray-400 group-hover:text-yellow-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-gray-400 group-hover:text-yellow-400 transition-colors transform group-hover:rotate-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                 </svg>
               )}
@@ -409,7 +393,7 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
               onChange={(e) => setDraft(e.target.value)}
               placeholder={placeholder}
               rows={1}
-              className="flex-1 bg-transparent text-white placeholder-gray-500 outline-none min-w-0 py-2.5 text-sm resize-none max-h-32 overflow-y-auto"
+              className="flex-1 bg-transparent text-white placeholder-gray-500 outline-none min-w-0 py-2.5 text-sm resize-none max-h-32 overflow-y-auto font-medium"
               style={{ WebkitTextFillColor: "#fff" }}
               onInput={(e) => {
                 const target = e.target as HTMLTextAreaElement;
@@ -422,9 +406,9 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
             <button
               onClick={handleSend}
               disabled={!draft.trim()}
-              className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all shrink-0 ${
+              className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 shrink-0 ${
                 draft.trim() 
-                  ? "bg-yellow-400 text-black hover:bg-yellow-300 shadow-lg shadow-yellow-400/20" 
+                  ? "bg-yellow-400 text-black hover:bg-yellow-300 hover:scale-110 hover:rotate-3 shadow-lg shadow-yellow-400/20" 
                   : "bg-white/5 text-gray-600 cursor-not-allowed"
               }`}
             >
@@ -435,10 +419,10 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
           </div>
           
           <div className="flex items-center justify-between px-1">
-            <span className="text-[10px] text-gray-500">
-              💡 Upload resume/deck for context
+            <span className="text-[10px] text-gray-500 font-mono">
+              💡 Upload resume/deck
             </span>
-            <span className="text-[10px] text-gray-600">
+            <span className="text-[10px] text-gray-600 font-mono">
               ⏎ to send
             </span>
           </div>
