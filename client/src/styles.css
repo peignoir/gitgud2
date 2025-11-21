@@ -10,6 +10,11 @@
   body {
     @apply min-h-dvh bg-[#0e111b] text-white font-mono;
   }
+
+  body.login-mode {
+    color-scheme: light;
+    @apply bg-white text-black;
+  }
 }
 
 @layer utilities {

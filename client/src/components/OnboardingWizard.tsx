@@ -35,6 +35,14 @@ export const OnboardingWizard = () => {
     }
   }, []);
 
+  React.useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.body.classList.toggle("login-mode", step === "login");
+    return () => {
+      document.body.classList.remove("login-mode");
+    };
+  }, [step]);
+
   const handleLogin = (id: string) => {
     setUserId(id);
     localStorage.setItem("gitgud_userid", id);
