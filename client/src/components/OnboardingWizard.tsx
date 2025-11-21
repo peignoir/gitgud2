@@ -72,7 +72,8 @@ export const OnboardingWizard = () => {
         headline: "GitGud Accelerator",
         description: "Your AI-powered path from idea to execution in 9 days and 90 minutes.",
         instructions: [],
-        gradient: "from-yellow-500/30 via-yellow-400/5 to-transparent"
+        gradient: "from-yellow-500/30 via-yellow-400/5 to-transparent",
+        chromeTone: "bg-white text-black"
       },
       profile: {
         index: 1,

@@ -330,14 +330,14 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
           <div className={`mt-4 p-3 border rounded-lg ${
             profileDepth === 'high' 
               ? 'bg-green-500/10 border-green-500/30' 
-              : 'bg-yellow-500/10 border-yellow-500/30'
+              : 'bg-green-500/10 border-green-500/30'
           }`}>
             <p className={`text-sm ${
-              profileDepth === 'high' ? 'text-green-300' : 'text-yellow-300'
+              profileDepth === 'high' ? 'text-green-300' : 'text-green-300'
             }`}>
               {profileDepth === 'high' 
                 ? "✅ Great profile! The AI has what it needs." 
-                : "💡 Profile has the basics, but could be richer."}
+                : "✅ Fast-Tracked! We have enough to start."}
             </p>
           </div>
         )}

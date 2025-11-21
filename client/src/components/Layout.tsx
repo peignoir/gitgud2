@@ -26,10 +26,12 @@ export const Layout: React.FC<LayoutProps> = ({
   topNav
 }) => {
   const accentBgClass = stepColor.replace("text-", "bg-");
+  const isLightMode = chromeTone.includes("bg-white");
 
   return (
-    <div className={`flex flex-col h-[100dvh] ${chromeTone} text-white font-mono`}>
+    <div className={`flex flex-col h-[100dvh] ${chromeTone} ${isLightMode ? "text-black" : "text-white"} font-mono`}>
       {/* Simple Fixed Header */}
+      {!isLightMode && (
       <div className="bg-[#0e111b] border-b border-white/10">
         <header className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
@@ -48,6 +50,7 @@ export const Layout: React.FC<LayoutProps> = ({
           )}
         </header>
       </div>
+      )}
 
       {/* Simplified Progress Indicator */}
       {topNav && (
