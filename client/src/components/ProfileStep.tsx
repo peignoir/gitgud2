@@ -2,6 +2,47 @@ import React, { useEffect, useRef, useState } from "react";
 import { useChat } from "../hooks/useChat";
 import MessageBubble from "./MessageBubble";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
+
+type CachedProfile = {
+  founder?: string;
+  location?: string;
+  background?: string;
+  loves?: string;
+  hates?: string;
+  unfair_advantages?: string;
+  stage?: string;
+  goals?: string;
+  notes?: string;
+  ready?: boolean;
+};
+
+type ProfileTextField = Exclude<keyof CachedProfile, "ready">;
+
+const PROFILE_BLOCK_REGEX = /```(?:json)?\s*FOUNDER_PROFILE\s*([\s\S]*?)```/i;
+const PROFILE_TEXT_FIELDS: ReadonlyArray<ProfileTextField> = [
+  "founder",
+  "location",
+  "background",
+  "loves",
+  "hates",
+  "unfair_advantages",
+  "stage",
+  "goals",
+  "notes"
+];
+
+const ANSI_REGEX = /\x1b\[[0-9;]*m/g;
+const stripAnsiCodes = (value: string) => value.replace(ANSI_REGEX, "");
+const sanitizeValue = (value?: string) => {
+  if (!value) return value;
+  const stripped = stripAnsiCodes(value).replace(/\s+/g, " ").trim();
+  if (stripped === "-" || stripped === "UNKNOWN" || stripped === "N/A") {
+    return undefined;
+  }
+  return stripped;
+};
+
 interface ProfileStepProps {
   userId: string;
   onComplete: () => void;
@@ -45,22 +86,13 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
   const [draft, setDraft] = useState("");
   const [showDebug, setShowDebug] = useState(false); // Always start with debug hidden
   const [uploadingFile, setUploadingFile] = useState(false);
-  const stripAnsi = (value: string) => value.replace(/\x1b\[[0-9;]*m/g, "");
-  const sanitize = (value?: string) =>
-    value ? stripAnsi(value).replace(/\s+/g, " ").trim() : value;
 
-  const [profileData, setProfileData] = useState<{
-    founder?: string;
-    background?: string;
-    stage?: string;
-    goals?: string;
-    motivations?: string;
-    strengths?: string;
-    gaps?: string;
-    ready?: boolean;
-  }>({});
+  const [profileData, setProfileData] = useState<CachedProfile>({});
   const [hasExistingProfile, setHasExistingProfile] = useState(false);
   const [memoryCheckDone, setMemoryCheckDone] = useState(false);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const userNearBottomRef = useRef(true);
+  const [showNewMessageNotice, setShowNewMessageNotice] = useState(false);
 
   const persistProfile = React.useCallback(
     (updater: (prev: typeof profileData) => typeof profileData) => {
@@ -122,7 +154,6 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
         "based on our previous",
         "we've discussed",
         "you've told me",
-        "franck" // Specific name recognition
       ];
       
       const hasKnowledge = knowledgeIndicators.some(indicator => content.includes(indicator));
@@ -131,98 +162,175 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
         setHasExistingProfile(true);
         // Set some default profile data to indicate completion
         persistProfile(() => ({
-          founder: "Franck Nouyrigat",
-          background: "Pre-existing profile",
-          stage: "Known",
-          goals: "Known",
           ready: true
         }));
       }
     }
   }, [messages, memoryCheckDone]);
 
-  // Extract profile data from messages
-  useEffect(() => {
-    // Look through all assistant messages for profile data
-    for (const msg of messages.filter(m => m.role === "assistant").reverse()) {
-      if (msg.content) {
-        // detect checklist ready signal
-        if (msg.content.toLowerCase().includes("[x] bio/background")) {
-          setHasExistingProfile(true);
-          persistProfile((prev) => ({ ...prev, ready: true }));
-        }
-        // Check if message contains READY signal
-        if (msg.content.includes('READY')) {
-          persistProfile(prev => ({ ...prev, ready: true }));
-        }
-        
-        // Detect completion signals for other flows
-        if (msg.content.includes('IDEATION_RESULTS') || 
-            msg.content.includes('SPRINT_PLAN') || 
-            msg.content.includes('VIBECELERATOR_STATUS')) {
-           persistProfile(prev => ({ ...prev, ready: true }));
-        }
-        
-        // Robust JSON extraction
-        try {
-          // Find JSON block specifically - relaxed regex
-          const jsonMatch = msg.content.match(/```(?:json)?\s*(?:FOUNDER_PROFILE)?\s*([\s\S]*?)\s*```/i);
-          if (jsonMatch) {
-            const jsonContent = jsonMatch[1];
-            
-            try {
-              // Try standard parse first
-              const data = JSON.parse(jsonContent);
-              if (data.founder || data.background || data.stage || data.goals) {
-                persistProfile(prev => {
-                  const next = {
-                    ...prev,
-                    ...data,
-                    founder: sanitize(data.founder),
-                    background: sanitize(data.background),
-                    stage: sanitize(data.stage),
-                    goals: sanitize(data.goals),
-                    motivations: sanitize(data.motivations),
-                    strengths: sanitize(data.strengths),
-                    gaps: sanitize(data.gaps),
-                    working_style: sanitize(data.working_style),
-                    notes: sanitize(data.notes)
-                  };
-                  if (next.founder && next.background) {
-                    next.ready = true;
-                    setHasExistingProfile(true);
-                  }
-                  return next;
-                });
-              }
-            } catch (e) {
-              // Fallback: Try to extract key fields via regex if JSON is broken/multiline
-              console.log("JSON parse failed, trying regex fallback");
-              const founderMatch = jsonContent.match(/"founder"\s*:\s*"([^"]*)"/);
-              const bgMatch = jsonContent.match(/"background"\s*:\s*"([\s\S]*?)"(?=\s*,\s*"|$)/);
-              
-              if (founderMatch || bgMatch) {
-                persistProfile(prev => {
-                  const next = {
-                    ...prev,
-                    founder: founderMatch ? sanitize(founderMatch[1]) : prev.founder,
-                    background: bgMatch ? sanitize(bgMatch[1]) : prev.background
-                  };
-                  if (next.founder && next.background) {
-                    next.ready = true;
-                    setHasExistingProfile(true);
-                  }
-                  return next;
-                });
-              }
-            }
-          }
-        } catch (e) {
-          // Fail silently on regex errors
-        }
+  const latestProfileJson = React.useMemo(() => {
+    for (const msg of [...messages].filter((m) => m.role === "assistant").reverse()) {
+      if (!msg.content) continue;
+      const content = stripAnsiCodes(msg.content);
+      const match = content.match(PROFILE_BLOCK_REGEX);
+      if (match) {
+        return match[1].trim();
       }
     }
+    return null;
   }, [messages]);
+
+  const latestProfileUpdate = React.useMemo<Partial<Record<ProfileTextField, string>> | null>(() => {
+    if (!latestProfileJson) {
+      return null;
+    }
+    try {
+      const parsed = JSON.parse(latestProfileJson) as Record<string, unknown>;
+      const sanitizedUpdate: Partial<Record<ProfileTextField, string>> = {};
+      PROFILE_TEXT_FIELDS.forEach((field) => {
+        const rawValue = parsed[field as keyof typeof parsed];
+        if (typeof rawValue === "string") {
+          const cleaned = sanitizeValue(rawValue);
+          if (cleaned) {
+            sanitizedUpdate[field] = cleaned;
+          }
+        }
+      });
+      if (!Object.keys(sanitizedUpdate).length) {
+        return null;
+      }
+      return sanitizedUpdate;
+    } catch (error) {
+      console.warn("Failed to parse founder profile JSON block:", error);
+      return null;
+    }
+  }, [latestProfileJson]);
+
+  useEffect(() => {
+    if (!latestProfileUpdate) {
+      return;
+    }
+    persistProfile((prev) => {
+      let hasChanges = !prev.ready;
+      const next: CachedProfile = {
+        ...prev,
+        ready: true
+      };
+
+      (Object.entries(latestProfileUpdate) as Array<[ProfileTextField, string]>).forEach(([field, value]) => {
+        if (next[field] !== value) {
+          hasChanges = true;
+          next[field] = value;
+        }
+      });
+
+      if (!hasChanges) {
+        return prev;
+      }
+
+      if (next.founder && next.background) {
+        setHasExistingProfile(true);
+      }
+      return next;
+    });
+  }, [latestProfileUpdate, persistProfile]);
+
+  useEffect(() => {
+    const latestAssistant = [...messages].filter((m) => m.role === "assistant").pop();
+    if (!latestAssistant || !latestAssistant.content) {
+      return;
+    }
+    const normalized = stripAnsiCodes(latestAssistant.content).toLowerCase();
+    const hasChecklist = normalized.includes("[x] bio/background");
+    const hasReadyCue = normalized.includes("identity scan complete") || normalized.includes("ready");
+    const flowCompleteCue =
+      latestAssistant.content.includes("IDEATION_RESULTS") ||
+      latestAssistant.content.includes("SPRINT_PLAN") ||
+      latestAssistant.content.includes("VIBECELERATOR_STATUS");
+    if ((hasReadyCue || flowCompleteCue) && !profileData.ready) {
+      persistProfile((prev) => ({ ...prev, ready: true }));
+    }
+    if (hasChecklist) {
+      setHasExistingProfile(true);
+    }
+  }, [messages, persistProfile, profileData.ready]);
+
+  const displayProfile = React.useMemo(() => {
+    if (!latestProfileUpdate) {
+      return profileData;
+    }
+    return {
+      ...profileData,
+      ...latestProfileUpdate
+    };
+  }, [profileData, latestProfileUpdate]);
+
+  const handleScroll = React.useCallback(() => {
+    const container = chatContainerRef.current;
+    if (!container) {
+      return;
+    }
+    const nearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 160;
+    userNearBottomRef.current = nearBottom;
+    if (nearBottom) {
+      setShowNewMessageNotice(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const lastMessage = messages[messages.length - 1];
+    if (!lastMessage) {
+      return;
+    }
+    if (userNearBottomRef.current || lastMessage.role === "user") {
+      requestAnimationFrame(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      });
+      setShowNewMessageNotice(false);
+    } else if (lastMessage.role === "assistant") {
+      setShowNewMessageNotice(true);
+    }
+  }, [messages]);
+
+  const jumpToLatest = React.useCallback(() => {
+    const container = chatContainerRef.current;
+    if (!container) {
+      return;
+    }
+    container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
+    userNearBottomRef.current = true;
+    setShowNewMessageNotice(false);
+  }, []);
+
+  const handleProfileFieldsSave = React.useCallback(
+    async (fields: Partial<Record<ProfileTextField, string>>) => {
+      if (!userId) {
+        throw new Error("Missing user id.");
+      }
+      const response = await fetch(`${API_BASE_URL}/api/profile`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": userId
+        },
+        body: JSON.stringify({ profile: fields })
+      });
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message || "Failed to save profile.");
+      }
+      const data = await response.json();
+      const updatedProfile = data?.profile;
+      if (!updatedProfile || typeof updatedProfile !== "object") {
+        throw new Error("Server response missing updated profile.");
+      }
+      persistProfile(() => ({
+        ...updatedProfile,
+        ready: true
+      }));
+    },
+    [persistProfile, userId]
+  );
 
   // Initial greeting if empty
   useEffect(() => {
@@ -331,7 +439,7 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
   const showNextButton = isProfileComplete || userMessageCount >= 5;
 
   // Calculate profile depth (word count as proxy)
-  const wordCount = Object.values(profileData).join(' ').split(/\s+/).filter(Boolean).length;
+  const wordCount = Object.values(displayProfile).join(' ').split(/\s+/).filter(Boolean).length;
   // Also count user's total input
   const userWordCount = messages
     .filter(m => m.role === "user")
@@ -346,7 +454,8 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
   const depthEmoji = profileDepth === 'low' ? '📝' : profileDepth === 'medium' ? '📊' : '🎯';
 
   return (
-    <div className={`flex flex-col h-full ${mergedVibe.panelClassName}`}>
+    <>
+    <div className={`relative flex flex-col h-full ${mergedVibe.panelClassName}`}>
       {/* Header Area */}
       <div className="px-4 py-3 border-b border-white/5 bg-white/5/30 backdrop-blur-sm">
         <div className="flex flex-col gap-2">
@@ -390,44 +499,19 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-24 min-h-0">
-        {profileData.founder && (
-          <div className="p-4 rounded-xl border border-white/10 bg-white/5 text-sm">
-            <p className="text-base font-semibold text-white">{profileData.founder}</p>
-            {profileData.background && (
-              <p className="text-white/70 mt-2 text-sm leading-relaxed">
-                {profileData.background}
-              </p>
-            )}
-            {(profileData.stage || profileData.goals) && (
-              <div className="mt-3 flex flex-wrap gap-2 text-[11px] uppercase tracking-widest text-white/60">
-                {profileData.stage && <span>Stage: {profileData.stage}</span>}
-                {profileData.goals && <span>Goals: {profileData.goals}</span>}
-              </div>
-            )}
-          </div>
-        )}
+      <div
+        ref={chatContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto p-4 space-y-4 pb-24 min-h-0"
+      >
         {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} showDebug={showDebug} />
+          <MessageBubble
+            key={msg.id}
+            message={msg}
+            showDebug={showDebug}
+            onProfileSave={handleProfileFieldsSave}
+          />
         ))}
-        
-        {/* Status Messages */}
-        {hasExistingProfile && (
-          <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg flex flex-col gap-2">
-            <p className="text-sm text-blue-300">
-              👋 <strong>Welcome back!</strong> I already have your profile. Update details or click Next.
-            </p>
-            {showNextButton && (
-              <button
-                onClick={onComplete}
-                className="self-start text-xs font-semibold px-3 py-1 rounded-full bg-blue-500/20 text-blue-200 border border-blue-400/50 hover:bg-blue-500/30 transition"
-              >
-                Jump to next →
-              </button>
-            )}
-          </div>
-        )}
-        
         {!hasExistingProfile && isProfileComplete && (
           <div className={`mt-4 p-3 border rounded-lg ${
             profileDepth === 'high' 
@@ -447,6 +531,15 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
         <div ref={bottomRef} />
       </div>
 
+      {showNewMessageNotice && (
+        <button
+          onClick={jumpToLatest}
+          className="absolute bottom-28 right-6 rounded-full border border-white/20 bg-black/70 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white shadow-lg backdrop-blur transition hover:border-white/40 hover:bg-black/80"
+        >
+          New mentor reply ↓
+        </button>
+      )}
+
       {/* Input Area */}
       <div className="p-4 bg-black/80 backdrop-blur-md border-t border-white/10 relative z-10">
           {/* Status/Next Area */}
@@ -454,11 +547,23 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
           <div className="flex flex-col justify-center">
             <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold">
               <span className={`w-1.5 h-1.5 rounded-full ${isStreaming ? "bg-yellow-300 animate-ping" : (showNextButton ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "bg-gray-500")}`} />
-              {isStreaming ? "COOKING 🍳..." : (profileData.ready ? "READY ✨" : (showNextButton ? (isProfileFlow ? "IDENTITY LOCKED 🔒" : "STEP COMPLETE ✅") : (isProfileFlow ? "SCANNING... 📡" : "WAITING...")))}
+              {isStreaming
+                ? "COOKING 🍳..."
+                : profileData.ready
+                  ? "READY ✨"
+                  : showNextButton
+                    ? isProfileFlow
+                      ? "IDENTITY LOCKED 🔒"
+                      : "STEP COMPLETE ✅"
+                    : isProfileFlow
+                      ? displayProfile.founder
+                        ? "SCANNING COMPLETE 📡"
+                        : "SCANNING... 📡"
+                      : "WAITING..."}
             </div>
             {!showNextButton && !isStreaming && isProfileFlow && (
               <span className="text-[10px] text-yellow-500/80 mt-1 animate-pulse">
-                * Need name & background
+                {displayProfile.founder ? "* Reviewing profile..." : "* Need name & background"}
               </span>
             )}
           </div>
@@ -466,39 +571,22 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
           <button
             onClick={onComplete}
             disabled={!showNextButton}
-            className={`flex items-center gap-2 px-5 py-2 rounded-full text-xs font-black tracking-wide transition-all duration-300 ${
-              showNextButton 
-                ? "bg-gradient-to-r from-green-400 to-emerald-600 text-black shadow-[0_0_20px_rgba(52,211,153,0.4)] hover:shadow-[0_0_30px_rgba(52,211,153,0.6)] hover:scale-105 active:scale-95 cursor-pointer border-0" 
+            className={`flex items-center gap-3 px-6 py-2.5 rounded-full text-sm font-black tracking-wide transition-all duration-300 ${
+              showNextButton
+                ? "bg-gradient-to-r from-amber-300 via-yellow-300 to-lime-300 text-gray-900 shadow-[0_4px_24px_rgba(251,191,36,0.35)] hover:shadow-[0_8px_28px_rgba(251,191,36,0.45)] hover:scale-105 active:scale-95 border border-yellow-200/60"
                 : "bg-white/5 text-gray-600 border border-white/10 cursor-not-allowed opacity-50 grayscale"
             }`}
           >
-            NEXT STEP →
+            <span className="text-base">NEXT STEP</span>
+            <svg className="w-4 h-4" viewBox="0 0 24 24" stroke="currentColor" fill="none" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
           </button>
         </div>
 
         {/* Input Box */}
         <div className="flex flex-col gap-2 group/input">
           <div className="flex items-end gap-2 bg-black/40 rounded-xl p-2 border border-white/10 focus-within:border-yellow-400/50 focus-within:bg-white/5 transition-all duration-300 focus-within:shadow-[0_0_20px_rgba(250,204,21,0.1)]">
-            
-            {/* File Upload Button */}
-            <label className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-white/10 cursor-pointer transition-colors group shrink-0" title="Upload PDF">
-              <input
-                type="file"
-                accept=".pdf"
-                onChange={handleFileUpload}
-                disabled={uploadingFile}
-                className="hidden"
-              />
-              {uploadingFile ? (
-                <div className="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <svg className="w-5 h-5 text-gray-400 group-hover:text-yellow-400 transition-colors transform group-hover:rotate-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                </svg>
-              )}
-            </label>
-
-            {/* Text Input */}
             <textarea
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -510,7 +598,7 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
               onChange={(e) => setDraft(e.target.value)}
               placeholder={placeholder}
               rows={1}
-              className="flex-1 bg-transparent text-white placeholder-gray-500 outline-none min-w-0 py-2.5 text-sm resize-none max-h-32 overflow-y-auto font-medium"
+              className="flex-1 bg-transparent text-white placeholder-gray-500 outline-none min-w-0 py-2.5 text-base resize-none max-h-32 overflow-y-auto font-medium"
               style={{ WebkitTextFillColor: "#fff" }}
               onInput={(e) => {
                 const target = e.target as HTMLTextAreaElement;
@@ -518,6 +606,37 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
                 target.style.height = Math.min(target.scrollHeight, 128) + 'px';
               }}
             />
+
+            {/* File Upload Button */}
+            <label
+              className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-white/10 cursor-pointer transition-all shrink-0"
+              title="Attach PDF resume"
+            >
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={handleFileUpload}
+                disabled={uploadingFile}
+                className="hidden"
+              />
+              {uploadingFile ? (
+                <div className="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <svg
+                  className="w-5 h-5 text-gray-400 hover:text-yellow-300 transition"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.8}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M16.5 6.75v8.25a4.5 4.5 0 01-9 0v-9A3.75 3.75 0 0111.25 2.25c2.071 0 3.75 1.679 3.75 3.75v8.25a2.25 2.25 0 11-4.5 0V7.5"
+                  />
+                </svg>
+              )}
+            </label>
 
             {/* Send Button */}
             <button
@@ -546,5 +665,7 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
         </div>
       </div>
     </div>
+
+  </>
   );
 };

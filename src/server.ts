@@ -20,7 +20,8 @@ import {
   getVectorStoreId,
   summarizePdfUpload,
   resetUserData,
-  handleStepRequest
+  handleStepRequest,
+  applyManualProfileUpdate
 } from "./core/workflow.js";
 import { getAllPrompts, PromptKey, setPrompt } from "./core/prompts.js";
 
@@ -211,6 +212,22 @@ app.put("/api/prompts/:id", (req, res) => {
   }
 });
 
+app.post("/api/profile", async (req, res) => {
+  const userId = req.headers["x-user-id"] as string | undefined;
+  if (!userId) {
+    res.status(400).json({ error: "Missing x-user-id header" });
+    return;
+  }
+  try {
+    await initializeWorkflow();
+    const updatedProfile = await applyManualProfileUpdate(userId, req.body?.profile ?? {});
+    res.json({ profile: updatedProfile });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to update profile.";
+    res.status(400).json({ error: message });
+  }
+});
+
 type FileUploadRequest = Request & { file?: Express.Multer.File };
 
 app.post("/api/reset", async (req, res) => {
@@ -220,8 +237,8 @@ app.post("/api/reset", async (req, res) => {
     return;
   }
   try {
-    await resetUserData(userId);
-    res.json({ success: true, message: `Reset data for user ${userId}` });
+    const logs = await resetUserData(userId);
+    res.json({ success: true, message: `Reset data for user ${userId}`, logs });
   } catch (error) {
     console.error("Reset failed:", error);
     res.status(500).json({ error: "Failed to reset user data." });

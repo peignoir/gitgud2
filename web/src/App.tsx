@@ -541,7 +541,7 @@ export default function App() {
   ];
 
   return (
-    <div className="flex min-h-dvh flex-col bg-consoleBg text-consoleFg overflow-hidden">
+    <div className="flex min-h-dvh flex-col bg-consoleBg text-consoleFg overflow-hidden pt-[env(safe-area-inset-top)]">
       <header className="p-4 text-center text-lg font-semibold tracking-wide">Welcome to GitGud.vc</header>
 
       <main className="flex-1 min-h-0 px-3 pb-4 flex flex-col gap-4">

@@ -14,7 +14,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center px-6 py-16 bg-white text-black">
+    <div className="min-h-dvh w-full flex flex-col items-center justify-center px-6 py-16 bg-white text-black pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
       <div className="w-full max-w-md space-y-8 text-center">
         <div className="space-y-3">
           <div className="text-6xl animate-bounce duration-[2000ms]">👋</div>

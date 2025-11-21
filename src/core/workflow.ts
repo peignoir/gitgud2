@@ -1120,6 +1120,27 @@ async function runFounderProfiler(userId: string, question: string) {
   const { fullText } = await runAgentWithStreaming(founderProfiler, profilerInput, "profile", userId);
   const profileUpdate = extractFounderProfile(fullText);
   mergeFounderProfile(userId, profileUpdate);
+
+  // Sync specific updates to Mem0 to ensure name changes etc are remembered
+  if (profileUpdate && Object.keys(profileUpdate).length > 0) {
+    try {
+        const updateSummary = Object.entries(profileUpdate)
+            .filter(([_, v]) => v && typeof v === 'string' && v.length > 0)
+            .map(([k, v]) => `${k}: ${v}`)
+            .join(", ");
+            
+        if (updateSummary) {
+            await memClient.add(
+                [{ role: "user", content: `Update my profile data: ${updateSummary}` }, { role: "assistant", content: "Profile updated." }],
+                { user_id: userId, metadata: { type: "profile_update", timestamp: new Date().toISOString() } }
+            );
+            // Push to local memory snapshot as well
+            pushLongTermMemory(userId, `Profile Updated: ${updateSummary}`);
+        }
+    } catch (err) {
+        console.warn("Failed to sync profile update to Mem0", err);
+    }
+  }
 }
 
 function fallbackRouterPlan(userId: string, question: string): RouterPlan {
@@ -1661,17 +1682,39 @@ export function processSlashCommand(line: string): boolean {
   return handleSlashCommand(line);
 }
 
-export async function resetUserData(userId: string): Promise<void> {
+export async function resetUserData(userId: string): Promise<string[]> {
+  const logs: string[] = [];
   try {
     // 1. Clear conversation cache
     const userConversationPath = getConversationPath(userId);
     if (fs.existsSync(userConversationPath)) {
       fs.unlinkSync(userConversationPath);
+      logs.push("Cleared conversation session cache.");
+    } else {
+      logs.push("No conversation session cache found.");
     }
 
     // 2. Clear Mem0 long-term memory
-    // Mem0 doesn't have a "deleteAll" by user, but we can list and delete.
-    // For now, we'll just reset the local state which forces a refresh.
+    try {
+      logs.push("Fetching long-term memories from Mem0...");
+      const memories = await memClient.getAll({ user_id: userId, limit: 100 });
+      
+      if (Array.isArray(memories) && memories.length > 0) {
+        logs.push(`Found ${memories.length} memories. Deleting...`);
+        const deletePromises = memories.map(async (m: any) => {
+            if (m.id) {
+                await memClient.delete(m.id);
+            }
+        });
+        await Promise.all(deletePromises);
+        logs.push(`Successfully deleted ${memories.length} memories from Mem0.`);
+      } else {
+        logs.push("No long-term memories found in Mem0.");
+      }
+    } catch (memError) {
+      console.error("Error clearing Mem0:", memError);
+      logs.push(`Failed to clear Mem0 memories: ${memError instanceof Error ? memError.message : String(memError)}`);
+    }
     
     // 3. Clear User State
     if (userStateMap.has(userId)) {
@@ -1685,11 +1728,13 @@ export async function resetUserData(userId: string): Promise<void> {
       state.vibeceleratorStatus = undefined;
       state.longTermMemoryHydrated = false;
       state.conversationSession = null;
-      // Note: we don't delete the key entirely so the object reference remains valid if held elsewhere,
-      // but resetting properties is cleaner.
+      logs.push("Reset local user state (profile, backlog, etc).");
+    } else {
+      logs.push("No active local user state found.");
     }
 
     console.log(`[Reset] Data cleared for user ${userId}`);
+    return logs;
   } catch (error) {
     console.error(`[Reset] Failed to clear data for user ${userId}:`, error);
     throw error;

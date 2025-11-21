@@ -22,9 +22,54 @@ type StepMeta = {
   vibe?: React.ComponentProps<typeof ProfileStep>["vibe"];
 };
 
+const ResetLogModal = ({ logs, onClose }: { logs: string[]; onClose: () => void }) => {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+      <div className="flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-xl border border-white/10 bg-[#0e111b] shadow-2xl">
+        <div className="flex items-center justify-between border-b border-white/10 bg-white/5 px-4 py-3">
+          <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-red-400">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+            System Reset Logs
+          </h3>
+          <button onClick={onClose} className="text-gray-500 transition-colors hover:text-white">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+        <div className="flex-1 space-y-2 overflow-y-auto bg-black/50 p-4 font-mono text-xs">
+          {logs.map((log, i) => (
+            <div key={i} className="border-l-2 border-white/10 pl-3 py-0.5 text-gray-300">
+              <span className="mr-2 text-gray-600">[{String(i + 1).padStart(2, "0")}]</span>
+              {log}
+            </div>
+          ))}
+          <div className="mt-4 border-t border-white/5 pt-2 font-bold text-green-400">
+            ✓ Reset Sequence Complete
+          </div>
+        </div>
+        <div className="border-t border-white/10 bg-white/5 p-4">
+          <button
+            onClick={onClose}
+            className="w-full rounded-lg bg-white/10 py-2 text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-white/20"
+          >
+            Close & Restart
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const OnboardingWizard = () => {
   const [step, setStep] = useState<Step>("login");
   const [userId, setUserId] = useState<string>("");
+  const [resetLogs, setResetLogs] = useState<string[] | null>(null);
 
   // Load user from local storage on mount
   React.useEffect(() => {
@@ -61,20 +106,40 @@ export const OnboardingWizard = () => {
   const handleReset = async () => {
     if (!userId) return;
     if (confirm("Are you sure? This will wipe all your data.")) {
-    try {
+      try {
         const API_BASE_URL = import.meta.env.VITE_API_URL || "";
-        await fetch(`${API_BASE_URL}/api/reset`, {
-        method: "POST",
-        headers: { "x-user-id": userId }
-      });
-      localStorage.removeItem("gitgud_userid");
-        setUserId("");
-        setStep("login");
+        const res = await fetch(`${API_BASE_URL}/api/reset`, {
+          method: "POST",
+          headers: { "x-user-id": userId }
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(errText || `Server error ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        // Clear specific profile cache to prevent hydration of old data
+        localStorage.removeItem(`gitgud_profile_${userId}`);
+        localStorage.removeItem("gitgud_userid");
+
+        if (data.logs && Array.isArray(data.logs)) {
+          setResetLogs(data.logs.length > 0 ? data.logs : ["Reset performed successfully."]);
+        } else {
+          setResetLogs(["Reset performed (no logs returned)."]);
+        }
       } catch (e) {
         console.error("Reset failed", e);
-        alert("Reset failed");
+        alert("Reset failed: " + (e instanceof Error ? e.message : String(e)));
       }
     }
+  };
+
+  const closeResetModal = () => {
+    setResetLogs(null);
+    setUserId("");
+    setStep("login");
   };
 
   const stageOrder: Step[] = ["login", "profile", "idea", "sprint", "vibecelerator", "result", "console"];
@@ -98,11 +163,11 @@ export const OnboardingWizard = () => {
         color: "text-amber-300",
         badge: "Step 1 · Identity Scan",
         headline: "Tell us who you are, fast.",
-        description: "Short, direct answers only. Think LinkedIn bio + current goal.",
+        description: "Short, direct answers only. Think LinkedIn bio + general goal in life at a 5 10 years horizon.",
         instructions: [
           "Drop a 1-line bio or LinkedIn.",
-          "Share current objective (idea, job, raise).",
-          "Add where you are + availability."
+          "Share your unfair advantages.",
+          "What do you hate/love working on?"
         ],
         gradient: "from-amber-500/30 via-amber-400/5 to-transparent",
         flowId: "flow_profile",
@@ -399,6 +464,7 @@ export const OnboardingWizard = () => {
           vibe={currentConfig.vibe}
         /> 
       )}
+      {resetLogs && <ResetLogModal logs={resetLogs} onClose={closeResetModal} />}
     </Layout>
   );
 };

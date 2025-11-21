@@ -29,7 +29,7 @@ export const Layout: React.FC<LayoutProps> = ({
   const isLightMode = chromeTone.includes("bg-white");
 
   return (
-    <div className={`flex flex-col h-[100dvh] ${chromeTone} ${isLightMode ? "text-black" : "text-white"} font-mono`}>
+    <div className={`flex flex-col h-[100dvh] ${chromeTone} ${isLightMode ? "text-black" : "text-white"} font-mono pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]`}>
       {/* Simple Fixed Header */}
       {!isLightMode && (
       <div className="bg-[#0e111b] border-b border-white/10">
