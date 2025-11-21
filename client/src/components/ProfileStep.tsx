@@ -35,6 +35,10 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
   vibe = DEFAULT_VIBE
 }) => {
   const mergedVibe = { ...DEFAULT_VIBE, ...vibe };
+  const profileCacheKey = React.useMemo(
+    () => (userId ? `gitgud_profile_${userId}` : undefined),
+    [userId]
+  );
   const { messages, isStreaming, sendMessage } = useChat(userId, flowId);
   const bottomRef = useRef<HTMLDivElement>(null);
   const seedRef = useRef(false);
@@ -53,6 +57,44 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
   }>({});
   const [hasExistingProfile, setHasExistingProfile] = useState(false);
   const [memoryCheckDone, setMemoryCheckDone] = useState(false);
+
+  const persistProfile = React.useCallback(
+    (updater: (prev: typeof profileData) => typeof profileData) => {
+      setProfileData((prev) => {
+        const next = updater(prev);
+        if (profileCacheKey) {
+          try {
+            localStorage.setItem(profileCacheKey, JSON.stringify(next));
+          } catch (err) {
+            console.warn("Failed to store cached profile", err);
+          }
+        }
+        return next;
+      });
+    },
+    [profileCacheKey]
+  );
+
+  // Hydrate from cached profile for instant display
+  useEffect(() => {
+    if (!profileCacheKey || !userId) return;
+    try {
+      const cached = localStorage.getItem(profileCacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        setProfileData((prev) => {
+          const merged = { ...parsed, ...prev };
+          if (merged.founder && merged.background) {
+            merged.ready = true;
+            setHasExistingProfile(true);
+          }
+          return merged;
+        });
+      }
+    } catch (err) {
+      console.warn("Failed to load cached profile", err);
+    }
+  }, [profileCacheKey, userId]);
 
   // Auto-scroll
   useEffect(() => {
@@ -84,12 +126,13 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
       if (hasKnowledge) {
         setHasExistingProfile(true);
         // Set some default profile data to indicate completion
-        setProfileData({
+        persistProfile(() => ({
           founder: "Franck Nouyrigat",
           background: "Pre-existing profile",
           stage: "Known",
-          goals: "Known"
-        });
+          goals: "Known",
+          ready: true
+        }));
       }
     }
   }, [messages, memoryCheckDone]);
@@ -101,18 +144,18 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
       if (msg.content) {
         // detect checklist ready signal
         if (msg.content.toLowerCase().includes("[x] bio/background")) {
-          setProfileData((prev) => ({ ...prev, ready: true }));
+          persistProfile((prev) => ({ ...prev, ready: true }));
         }
         // Check if message contains READY signal
         if (msg.content.includes('READY')) {
-          setProfileData(prev => ({ ...prev, ready: true }));
+          persistProfile(prev => ({ ...prev, ready: true }));
         }
         
         // Detect completion signals for other flows
         if (msg.content.includes('IDEATION_RESULTS') || 
             msg.content.includes('SPRINT_PLAN') || 
             msg.content.includes('VIBECELERATOR_STATUS')) {
-           setProfileData(prev => ({ ...prev, ready: true }));
+           persistProfile(prev => ({ ...prev, ready: true }));
         }
         
         // Robust JSON extraction
@@ -126,7 +169,14 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
               // Try standard parse first
               const data = JSON.parse(jsonContent);
               if (data.founder || data.background || data.stage || data.goals) {
-                setProfileData(prev => ({ ...prev, ...data }));
+                persistProfile(prev => {
+                  const next = { ...prev, ...data };
+                  if (next.founder && next.background) {
+                    next.ready = true;
+                    setHasExistingProfile(true);
+                  }
+                  return next;
+                });
               }
             } catch (e) {
               // Fallback: Try to extract key fields via regex if JSON is broken/multiline
@@ -135,11 +185,18 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
               const bgMatch = jsonContent.match(/"background"\s*:\s*"([\s\S]*?)"(?=\s*,\s*"|$)/);
               
               if (founderMatch || bgMatch) {
-                setProfileData(prev => ({
-                  ...prev,
-                  founder: founderMatch ? founderMatch[1] : prev.founder,
-                  background: bgMatch ? bgMatch[1].replace(/\n/g, ' ') : prev.background
-                }));
+                persistProfile(prev => {
+                  const next = {
+                    ...prev,
+                    founder: founderMatch ? founderMatch[1] : prev.founder,
+                    background: bgMatch ? bgMatch[1].replace(/\n/g, ' ') : prev.background
+                  };
+                  if (next.founder && next.background) {
+                    next.ready = true;
+                    setHasExistingProfile(true);
+                  }
+                  return next;
+                });
               }
             }
           }
@@ -317,6 +374,22 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
 
       {/* Chat Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-24 min-h-0">
+        {profileData.founder && (
+          <div className="p-4 rounded-xl border border-white/10 bg-white/5 text-sm">
+            <p className="text-base font-semibold text-white">{profileData.founder}</p>
+            {profileData.background && (
+              <p className="text-white/70 mt-2 text-sm leading-relaxed">
+                {profileData.background}
+              </p>
+            )}
+            {(profileData.stage || profileData.goals) && (
+              <div className="mt-3 flex flex-wrap gap-2 text-[11px] uppercase tracking-widest text-white/60">
+                {profileData.stage && <span>Stage: {profileData.stage}</span>}
+                {profileData.goals && <span>Goals: {profileData.goals}</span>}
+              </div>
+            )}
+          </div>
+        )}
         {messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} showDebug={showDebug} />
         ))}
