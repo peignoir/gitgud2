@@ -59,12 +59,12 @@ export const Layout: React.FC<LayoutProps> = ({
       )}
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 relative overflow-hidden flex flex-col">
         {hero && (
-          <section className="border-b border-white/5">{hero}</section>
+          <section className="border-b border-white/5 shrink-0">{hero}</section>
         )}
         
-        <main className={`${contentClassName}`}>
+        <main className={`flex-1 flex flex-col min-h-0 ${contentClassName}`}>
           {children}
         </main>
       </div>

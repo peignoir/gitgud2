@@ -68,7 +68,8 @@ const buildDefaultPrompts = (summary: string): Record<PromptKey, string> => ({
     "1. Ask one question at a time. No chit-chat. Use <20 words per sentence.",
     "2. Sequence: background → goal/idea → motivation → gaps → confirmation.",
     "3. If the user rambles, aggressively summarize and ask the next missing field.",
-    "4. Once you have {founder, background, stage, goals}, say “Profile locked. Anything else?” and stop asking.",
+    "4. Status Check: If the user asks about status, show a checklist: [x] Background [ ] Goals etc.",
+    "5. Once you have {founder, background, stage, goals}, output 'READY' on a new line, say “Profile locked.”, and present the final bio summary.",
     "Each response must include:",
     "- A direct question or confirmation (one sentence).",
     '- End with a fenced JSON block:\n```json FOUNDER_PROFILE\n{ "founder": "...", "background": "...", "stage": "...", "motivations": "...", "strengths": "...", "gaps": "...", "working_style": "...", "goals": "...", "notes": "..." }\n```'

@@ -229,6 +229,9 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
   // Show Next button if profile is complete OR user has had enough interaction OR has existing profile OR READY signal
   const isProfileComplete = hasExistingProfile || profileData.ready || completionPercent >= 100 || (completionPercent >= 50 && hasSubstantialConversation);
   
+  // Force show next button if user has sent enough messages (fallback)
+  const showNextButton = isProfileComplete || userMessageCount >= 5;
+
   // Calculate profile depth (word count as proxy)
   const wordCount = Object.values(profileData).join(' ').split(/\s+/).filter(Boolean).length;
   // Also count user's total input
@@ -324,21 +327,24 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
 
       {/* Input Area */}
       <div className="p-4 bg-black/80 backdrop-blur-md border-t border-white/10">
-        {/* Status/Next Area */}
+          {/* Status/Next Area */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-gray-500">
             <span className={`w-1.5 h-1.5 rounded-full ${isStreaming ? "bg-yellow-300 animate-pulse" : "bg-emerald-500"}`} />
-            {isStreaming ? "Thinking..." : "Ready"}
+            {isStreaming ? "Thinking..." : (profileData.ready ? "Ready" : "Listening")}
           </div>
 
-          {isProfileComplete && (
-            <button
-              onClick={onComplete}
-              className="flex items-center gap-2 px-4 py-1.5 bg-green-500/20 text-green-400 border border-green-500/50 rounded-full text-xs font-bold hover:bg-green-500/30 transition-all shadow-[0_0_15px_rgba(74,222,128,0.1)] animate-pulse"
-            >
-              NEXT STEP →
-            </button>
-          )}
+          <button
+            onClick={onComplete}
+            disabled={!showNextButton}
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+              showNextButton 
+                ? "bg-green-500/20 text-green-400 border border-green-500/50 hover:bg-green-500/30 shadow-[0_0_15px_rgba(74,222,128,0.1)] animate-pulse cursor-pointer" 
+                : "bg-white/5 text-gray-500 border border-white/10 cursor-not-allowed opacity-50"
+            }`}
+          >
+            NEXT STEP →
+          </button>
         </div>
 
         {/* Input Box */}
