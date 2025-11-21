@@ -99,6 +99,10 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
     // Look through all assistant messages for profile data
     for (const msg of messages.filter(m => m.role === "assistant").reverse()) {
       if (msg.content) {
+        // detect checklist ready signal
+        if (msg.content.toLowerCase().includes("[x] bio/background")) {
+          setProfileData((prev) => ({ ...prev, ready: true }));
+        }
         // Check if message contains READY signal
         if (msg.content.includes('READY')) {
           setProfileData(prev => ({ ...prev, ready: true }));
