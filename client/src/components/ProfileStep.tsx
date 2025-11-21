@@ -113,19 +113,34 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
         
         // Robust JSON extraction
         try {
-          // Find JSON block specifically
-          const jsonMatch = msg.content.match(/```json\s*(?:FOUNDER_PROFILE)?\s*([\s\S]*?)\s*```/);
+          // Find JSON block specifically - relaxed regex
+          const jsonMatch = msg.content.match(/```(?:json)?\s*(?:FOUNDER_PROFILE)?\s*([\s\S]*?)\s*```/i);
           if (jsonMatch) {
             const jsonContent = jsonMatch[1];
-            const data = JSON.parse(jsonContent);
             
-            // If we found valid data, update state
-            if (data.founder || data.background || data.stage || data.goals) {
-              setProfileData(prev => ({ ...prev, ...data }));
+            try {
+              // Try standard parse first
+              const data = JSON.parse(jsonContent);
+              if (data.founder || data.background || data.stage || data.goals) {
+                setProfileData(prev => ({ ...prev, ...data }));
+              }
+            } catch (e) {
+              // Fallback: Try to extract key fields via regex if JSON is broken/multiline
+              console.log("JSON parse failed, trying regex fallback");
+              const founderMatch = jsonContent.match(/"founder"\s*:\s*"([^"]*)"/);
+              const bgMatch = jsonContent.match(/"background"\s*:\s*"([\s\S]*?)"(?=\s*,\s*"|$)/);
+              
+              if (founderMatch || bgMatch) {
+                setProfileData(prev => ({
+                  ...prev,
+                  founder: founderMatch ? founderMatch[1] : prev.founder,
+                  background: bgMatch ? bgMatch[1].replace(/\n/g, ' ') : prev.background
+                }));
+              }
             }
           }
         } catch (e) {
-          // Fail silently on parse errors
+          // Fail silently on regex errors
         }
       }
     }
