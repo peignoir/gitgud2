@@ -295,7 +295,8 @@ export const OnboardingWizard = () => {
       "text-sky-500": { hex: "#0ea5e9", pastel: "rgba(14, 165, 233, 0.6)" }
     };
     
-    const targetColor = color || "text-yellow-300";
+    // Safety: default to yellow-300 if color is undefined or not found
+    const targetColor = color && colorMap[color] ? color : "text-yellow-300";
     const mapping = colorMap[targetColor] || colorMap["text-yellow-300"];
     
     return {
