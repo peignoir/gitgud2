@@ -472,13 +472,13 @@ const MessageBubble = memo(({ message, showDebug = false, onProfileSave }: Messa
 
   return (
     <div className="w-full py-2">
-      <div className={cn("mb-1 text-[10px] font-mono uppercase tracking-wider opacity-60", isUser ? "text-cyan-400" : "text-yellow-300")}>
-        {isUser ? "Founder" : "GitGud Mentor"}
+      <div className={cn("mb-1 text-[10px] font-mono uppercase tracking-wider opacity-60", isUser ? "text-cyan-600" : "text-violet-600")}>
+        {isUser ? "You" : "GitGud Mentor"}
       </div>
       <div
         className={cn(
           "font-mono text-sm leading-relaxed whitespace-pre-wrap break-words",
-          isUser ? "text-cyan-100" : "text-white/90",
+          isUser ? "text-gray-800" : "text-gray-700",
           message.pending && "opacity-70"
         )}
       >
