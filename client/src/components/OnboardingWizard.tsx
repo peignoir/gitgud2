@@ -278,19 +278,30 @@ export const OnboardingWizard = () => {
     // Map colors to vibrant, distinct pastel colors with good contrast
     const colorMap: Record<string, { hex: string; pastel: string }> = {
       "text-yellow-300": { hex: "#fbbf24", pastel: "rgba(251, 191, 36, 0.6)" }, // Strong yellow
-      "text-amber-300": { hex: "#f97316", pastel: "rgba(249, 115, 22, 0.5)" }, // Vibrant orange  
+      "text-amber-300": { hex: "#f97316", pastel: "rgba(249, 115, 22, 0.5)" }, // Vibrant orange
       "text-cyan-300": { hex: "#06b6d4", pastel: "rgba(6, 182, 212, 0.5)" }, // Cool cyan
       "text-rose-300": { hex: "#f43f5e", pastel: "rgba(244, 63, 94, 0.5)" }, // Bright red
       "text-violet-300": { hex: "#8b5cf6", pastel: "rgba(139, 92, 246, 0.5)" }, // Deep purple
       "text-emerald-300": { hex: "#10b981", pastel: "rgba(16, 185, 129, 0.5)" }, // Fresh green
-      "text-sky-300": { hex: "#0ea5e9", pastel: "rgba(14, 165, 233, 0.5)" } // Bright blue
+      "text-sky-300": { hex: "#0ea5e9", pastel: "rgba(14, 165, 233, 0.5)" }, // Bright blue
+      
+      // 500 variants for light mode
+      "text-yellow-500": { hex: "#eab308", pastel: "rgba(234, 179, 8, 0.6)" },
+      "text-amber-500": { hex: "#f59e0b", pastel: "rgba(245, 158, 11, 0.6)" },
+      "text-cyan-500": { hex: "#06b6d4", pastel: "rgba(6, 182, 212, 0.6)" },
+      "text-rose-500": { hex: "#f43f5e", pastel: "rgba(244, 63, 94, 0.6)" },
+      "text-violet-500": { hex: "#8b5cf6", pastel: "rgba(139, 92, 246, 0.6)" },
+      "text-emerald-500": { hex: "#10b981", pastel: "rgba(16, 185, 129, 0.6)" },
+      "text-sky-500": { hex: "#0ea5e9", pastel: "rgba(14, 165, 233, 0.6)" }
     };
     
-    const mapping = colorMap[color || "text-yellow-300"];
+    const targetColor = color || "text-yellow-300";
+    const mapping = colorMap[targetColor] || colorMap["text-yellow-300"];
+    
     return {
       hex: mapping.hex,
       pastel: mapping.pastel,
-      tailwindColor: color || "text-yellow-300"
+      tailwindColor: targetColor
     };
   };
   const currentConfig = stepConfig[step];
