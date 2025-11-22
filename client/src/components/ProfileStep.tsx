@@ -334,11 +334,14 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
 
   // Initial greeting if empty
   useEffect(() => {
-    if (messages.length === 0 && !seedRef.current) {
+    // Only send initial message if we have no history at all
+    if (messages.length === 0 && !seedRef.current && !hasExistingProfile) {
       seedRef.current = true;
-      sendMessage(overrideSeed || DEFAULT_SEED);
+      // Don't force the user to type first, just let the agent introduce itself naturally.
+      // We trigger the agent with a hidden system prompt essentially.
+      sendMessage("Hi! I'm ready to build my founder profile. Please introduce yourself and start the identity scan.");
     }
-  }, [messages.length, sendMessage, overrideSeed]);
+  }, [messages.length, sendMessage, hasExistingProfile]);
 
   const handleSend = async () => {
     if (!draft.trim()) return;
