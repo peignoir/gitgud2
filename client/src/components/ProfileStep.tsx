@@ -521,9 +521,7 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
             <p className={`text-sm ${
               profileDepth === 'high' ? 'text-green-300' : 'text-green-300'
             }`}>
-              {profileDepth === 'high' 
-                ? "✅ Great profile! The AI has what it needs." 
-                : "✅ Fast-Tracked! We have enough to start."}
+              ✅ Profile scanned! Let's dive in.
             </p>
           </div>
         )}

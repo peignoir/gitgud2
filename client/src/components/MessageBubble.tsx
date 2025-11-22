@@ -230,7 +230,7 @@ const StructuredJsonCard = ({
 
   if (isFounderProfile) {
     return (
-      <div className="rounded-xl border border-white/10 bg-white/5 text-left text-white/80">
+      <div className="rounded-xl border border-white/10 bg-white/5 text-left text-white/80 overflow-hidden">
         <div className="flex items-center justify-between px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-white/60">
           <span>Founder Profile Snapshot</span>
           <button
@@ -247,29 +247,32 @@ const StructuredJsonCard = ({
             {isEditing ? "Cancel" : "Edit Snapshot"}
           </button>
         </div>
-        <div className="space-y-4 px-3 pb-4">
-          {FOUNDER_FIELD_SPECS.map((field) => (
-            <div key={field.key}>
-              <p className="text-[10px] uppercase tracking-wide text-white/50 mb-1">{field.label}</p>
-              {isEditing ? (
-                <textarea
-                  value={profileForm[field.key] ?? ""}
-                  onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                  rows={field.multiline ? 4 : 2}
-                  className="w-full rounded-lg border border-white/15 bg-black/40 p-2 text-sm text-white outline-none focus:border-yellow-300 focus:ring-1 focus:ring-yellow-300"
-                />
-              ) : (
-                <p className="text-sm text-white/90 whitespace-pre-wrap">
-                  {profileForm[field.key] && profileForm[field.key].trim().length > 0
-                    ? profileForm[field.key]
-                    : "—"}
-                </p>
-              )}
-            </div>
-          ))}
+        <div className={`space-y-2 px-3 transition-all duration-300 ${isEditing ? "pb-4" : "pb-2 max-h-48 overflow-y-auto"}`}>
+          {FOUNDER_FIELD_SPECS.map((field) => {
+            const val = profileForm[field.key];
+            if (!isEditing && (!val || val.trim() === "" || val.trim() === "-")) return null;
+            
+            return (
+              <div key={field.key}>
+                <p className="text-[10px] uppercase tracking-wide text-white/50 mb-0.5">{field.label}</p>
+                {isEditing ? (
+                  <textarea
+                    value={val ?? ""}
+                    onChange={(e) => handleFieldChange(field.key, e.target.value)}
+                    rows={field.multiline ? 3 : 1}
+                    className="w-full rounded-lg border border-white/15 bg-black/40 p-2 text-xs text-white outline-none focus:border-yellow-300 focus:ring-1 focus:ring-yellow-300"
+                  />
+                ) : (
+                  <p className="text-xs text-white/90 whitespace-pre-wrap leading-snug">
+                    {val}
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
         {isEditing && (
-          <div className="flex flex-col gap-2 border-t border-white/10 px-3 py-3">
+          <div className="flex flex-col gap-2 border-t border-white/10 px-3 py-3 bg-black/20">
             {profileError && <p className="text-xs text-red-400">{profileError}</p>}
             <div className="flex items-center justify-end gap-2">
               <button

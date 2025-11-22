@@ -25,13 +25,13 @@ type StepMeta = {
 const ResetLogModal = ({ logs, onClose }: { logs: string[]; onClose: () => void }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-xl border border-white/10 bg-[#0e111b] shadow-2xl">
-        <div className="flex items-center justify-between border-b border-white/10 bg-white/5 px-4 py-3">
-          <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-red-400">
+      <div className="flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-4 py-3">
+          <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-red-500">
             <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
             System Reset Logs
           </h3>
-          <button onClick={onClose} className="text-gray-500 transition-colors hover:text-white">
+          <button onClick={onClose} className="text-gray-400 transition-colors hover:text-gray-700">
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
@@ -42,21 +42,21 @@ const ResetLogModal = ({ logs, onClose }: { logs: string[]; onClose: () => void 
             </svg>
           </button>
         </div>
-        <div className="flex-1 space-y-2 overflow-y-auto bg-black/50 p-4 font-mono text-xs">
+        <div className="flex-1 space-y-2 overflow-y-auto bg-gray-50 p-4 font-mono text-xs text-gray-600">
           {logs.map((log, i) => (
-            <div key={i} className="border-l-2 border-white/10 pl-3 py-0.5 text-gray-300">
-              <span className="mr-2 text-gray-600">[{String(i + 1).padStart(2, "0")}]</span>
+            <div key={i} className="border-l-2 border-gray-200 pl-3 py-0.5">
+              <span className="mr-2 text-gray-400">[{String(i + 1).padStart(2, "0")}]</span>
               {log}
             </div>
           ))}
-          <div className="mt-4 border-t border-white/5 pt-2 font-bold text-green-400">
+          <div className="mt-4 border-t border-gray-200 pt-2 font-bold text-green-600">
             ✓ Reset Sequence Complete
           </div>
         </div>
-        <div className="border-t border-white/10 bg-white/5 p-4">
+        <div className="border-t border-gray-100 bg-white p-4">
           <button
             onClick={onClose}
-            className="w-full rounded-lg bg-white/10 py-2 text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-white/20"
+            className="w-full rounded-lg bg-gray-100 py-2 text-xs font-bold uppercase tracking-widest text-gray-900 transition-colors hover:bg-gray-200"
           >
             Close & Restart
           </button>
@@ -159,40 +159,34 @@ export const OnboardingWizard = () => {
       },
       profile: {
         index: 1,
-        title: "Profile Builder",
-        color: "text-amber-300",
-        badge: "Step 1 · Identity Scan",
-        headline: "Tell us who you are, fast.",
+        title: "Profile 👤",
+        color: "text-amber-500",
+        badge: "Step 1",
+        headline: "Profile Builder",
         description: "Short, direct answers only. Think LinkedIn bio + general goal in life at a 5 10 years horizon.",
-        instructions: [
-          "Drop a 1-line bio or LinkedIn.",
-          "Share your unfair advantages.",
-          "What do you hate/love working on?"
-        ],
-        gradient: "from-amber-500/30 via-amber-400/5 to-transparent",
+        instructions: [],
+        gradient: "from-amber-500/10 via-amber-400/5 to-transparent",
+        chromeTone: "bg-white text-black",
         flowId: "flow_profile",
         seed: "Give me three short bullets about you to start the profile.",
         placeholder: "Ex: Solo founder in Paris · ex-Stripe PM",
         vibe: {
           badge: "FOUNDER PROFILER",
           description: "Rapid-fire questions to lock your bio. Keep each reply under 25 words.",
-          accentClass: "text-amber-300",
-          panelClassName: "bg-gradient-to-b from-[#1a1205] via-[#0e0b05] to-[#050305]"
+          accentClass: "text-amber-500",
+          panelClassName: "bg-white"
         }
       },
       idea: {
         index: 2,
-        title: "Ideation Lab",
-        color: "text-cyan-300",
-        badge: "Step 2 · Idea Pulse",
-        headline: "Co-create four edge ideas.",
+        title: "Ideation 💡",
+        color: "text-cyan-500",
+        badge: "Step 2",
+        headline: "Ideation Lab",
         description: "We’ll search fresh trends, propose 4 non-obvious plays, then pressure-test yours.",
-        instructions: [
-          "Review the four ideas served.",
-          "Call out one to explore or add your own.",
-          "Highlight unfair advantages or research to run."
-        ],
-        gradient: "from-cyan-500/30 via-cyan-400/5 to-transparent",
+        instructions: [],
+        gradient: "from-cyan-500/10 via-cyan-400/5 to-transparent",
+        chromeTone: "bg-white text-black",
         flowId: "flow_ideation",
         seed: "Scan latest trends + my profile, propose 4 novel startup ideas. End by asking which resonates.",
         placeholder: "Tell me which idea resonates or pitch yours.",
@@ -205,17 +199,14 @@ export const OnboardingWizard = () => {
       },
       sprint: {
         index: 3,
-        title: "90min Sprint",
-        color: "text-rose-300",
-        badge: "Step 3 · Execution Drill",
-        headline: "Ship something in 90 minutes.",
+        title: "Sprint ⚡️",
+        color: "text-rose-500",
+        badge: "Step 3",
+        headline: "90min Sprint",
         description: "No theory. Tactical checklists with a clear definition of done.",
-        instructions: [
-          "Confirm the idea you’re sprinting on.",
-          "Share constraints (tools, audience, time).",
-          "Report progress or blockers in-line."
-        ],
-        gradient: "from-rose-500/30 via-rose-400/5 to-transparent",
+        instructions: [],
+        gradient: "from-rose-500/10 via-rose-400/5 to-transparent",
+        chromeTone: "bg-white text-black",
         flowId: "flow_sprint",
         seed: "Design a 90-minute execution plan for the chosen idea. Keep it brutal and specific.",
         placeholder: "Ex: Need to validate landing page copy today.",
@@ -251,38 +242,32 @@ export const OnboardingWizard = () => {
       },
       result: {
         index: 5,
-        title: "Verdict",
-        color: "text-emerald-300",
-        badge: "Step 5 · Mentor Verdict",
-        headline: "Snap verdict + founder type.",
+        title: "Verdict 🏁",
+        color: "text-emerald-500",
+        badge: "Step 5",
+        headline: "Verdict",
         description: "Synthesized mentor output coming soon.",
-        instructions: [
-          "Review sprint + vibe logs.",
-          "Tag yourself: Venture / Lifestyle / Impact.",
-          "Queue questions for the console."
-        ],
-        gradient: "from-emerald-500/20 via-emerald-400/5 to-transparent"
+        instructions: [],
+        gradient: "from-emerald-500/10 via-emerald-400/5 to-transparent",
+        chromeTone: "bg-white text-black"
       },
       console: {
         index: 6,
-        title: "Console",
-        color: "text-sky-300",
-        badge: "Live Console",
-        headline: "Full YC mentor stack back online.",
+        title: "Console 🖥️",
+        color: "text-sky-500",
+        badge: "Console",
+        headline: "Console",
         description: "Ask anything. Router will pick the right mentors.",
-        instructions: [
-          "Reference data collected in earlier steps.",
-          "Tag requests with desired outcome.",
-          "Upload artifacts (deck, sprint proof) when ready."
-        ],
-        gradient: "from-sky-500/20 via-sky-400/5 to-transparent",
+        instructions: [],
+        gradient: "from-sky-500/10 via-sky-400/5 to-transparent",
+        chromeTone: "bg-white text-black",
         flowId: "flow_console",
         placeholder: "Ask anything. Ex: How do I pitch this seed round?",
         vibe: {
           badge: "TERMINAL MODE",
           description: "Multi-agent console. Expect colored logs + streaming answers.",
-          accentClass: "text-sky-300",
-          panelClassName: "bg-gradient-to-b from-[#04121c] via-[#050a11] to-[#020407]"
+          accentClass: "text-sky-500",
+          panelClassName: "bg-white"
         }
       }
     }),

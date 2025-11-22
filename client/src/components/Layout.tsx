@@ -31,30 +31,28 @@ export const Layout: React.FC<LayoutProps> = ({
   return (
     <div className={`flex flex-col h-[100dvh] ${chromeTone} ${isLightMode ? "text-black" : "text-white"} font-mono pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]`}>
       {/* Simple Fixed Header */}
-      {!isLightMode && (
-      <div className="bg-[#0e111b] border-b border-white/10">
+      <div className="bg-white border-b border-gray-200">
         <header className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
-            <div className={`w-3 h-3 ${accentBgClass} shadow-[0_0_8px_currentColor]`} />
-            <span className="font-bold tracking-tight text-lg text-gray-100">
+            <div className={`w-3 h-3 ${accentBgClass}`} />
+            <span className="font-bold tracking-tight text-lg text-gray-900">
               GitGud.vc
             </span>
           </div>
           {onReset && (
             <button
               onClick={onReset}
-              className="text-xs text-red-400 hover:text-red-300 transition-colors"
+              className="text-xs font-bold text-red-500 hover:text-red-600 transition-colors uppercase tracking-wider"
             >
               [RESET]
             </button>
           )}
         </header>
       </div>
-      )}
 
       {/* Simplified Progress Indicator */}
       {topNav && (
-        <div className="bg-[#05070f] border-b border-white/10 overflow-x-auto no-scrollbar">
+        <div className="bg-gray-50 border-b border-gray-200 overflow-x-auto no-scrollbar">
           <div className="min-w-max px-4">
             {topNav}
           </div>
