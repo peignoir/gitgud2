@@ -24,14 +24,14 @@ type StepMeta = {
 
 const ResetLogModal = ({ logs, onClose }: { logs: string[]; onClose: () => void }) => {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-4 py-3">
-          <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-red-500">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 text-text-primary">
+      <div className="flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-xl border border-border-subtle bg-bg-surface shadow-2xl">
+        <div className="flex items-center justify-between border-b border-border-subtle bg-bg-surface-soft px-4 py-3">
+          <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-status-danger">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-status-danger" />
             System Reset Logs
           </h3>
-          <button onClick={onClose} className="text-gray-400 transition-colors hover:text-gray-700">
+          <button onClick={onClose} className="text-text-muted transition-colors hover:text-text-primary">
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
@@ -42,21 +42,21 @@ const ResetLogModal = ({ logs, onClose }: { logs: string[]; onClose: () => void 
             </svg>
           </button>
         </div>
-        <div className="flex-1 space-y-2 overflow-y-auto bg-gray-50 p-4 font-mono text-xs text-gray-600">
+        <div className="flex-1 space-y-2 overflow-y-auto bg-bg-body p-4 font-mono text-xs text-text-secondary">
           {logs.map((log, i) => (
-            <div key={i} className="border-l-2 border-gray-200 pl-3 py-0.5">
-              <span className="mr-2 text-gray-400">[{String(i + 1).padStart(2, "0")}]</span>
+            <div key={i} className="border-l-2 border-border-subtle pl-3 py-0.5">
+              <span className="mr-2 text-text-muted">[{String(i + 1).padStart(2, "0")}]</span>
               {log}
             </div>
           ))}
-          <div className="mt-4 border-t border-gray-200 pt-2 font-bold text-green-600">
+          <div className="mt-4 border-t border-border-subtle pt-2 font-bold text-status-success">
             ✓ Reset Sequence Complete
           </div>
         </div>
-        <div className="border-t border-gray-100 bg-white p-4">
+        <div className="border-t border-border-subtle bg-bg-surface p-4">
           <button
             onClick={onClose}
-            className="w-full rounded-lg bg-gray-100 py-2 text-xs font-bold uppercase tracking-widest text-gray-900 transition-colors hover:bg-gray-200"
+            className="w-full rounded-lg bg-bg-surface-soft py-2 text-xs font-bold uppercase tracking-widest text-text-primary transition-colors hover:bg-border-subtle border border-border-subtle"
           >
             Close & Restart
           </button>
@@ -149,125 +149,122 @@ export const OnboardingWizard = () => {
       login: {
         index: 0,
         title: "Login",
-        color: "text-yellow-300",
+        color: "text-brand-primary",
         badge: "Stage 1 · Welcome",
         headline: "GitGud Accelerator",
         description: "Your AI-powered path from idea to execution in 9 days and 90 minutes.",
         instructions: [],
-        gradient: "from-yellow-500/30 via-yellow-400/5 to-transparent",
-        chromeTone: "bg-white text-black"
+        gradient: "from-brand-primary/20 via-brand-primary/5 to-transparent",
+        chromeTone: "bg-bg-surface"
       },
       profile: {
         index: 1,
         title: "Profile 👤",
-        color: "text-amber-500",
+        color: "text-accent-yellow",
         badge: "Step 1",
         headline: "Profile Builder",
         description: "Short, direct answers only. Think LinkedIn bio + general goal in life at a 5 10 years horizon.",
         instructions: [],
-        gradient: "from-amber-500/10 via-amber-400/5 to-transparent",
-        chromeTone: "bg-white text-black",
+        gradient: "from-accent-yellow/10 via-accent-yellow/5 to-transparent",
+        chromeTone: "bg-bg-surface",
         flowId: "flow_profile",
         seed: "Give me three short bullets about you to start the profile.",
         placeholder: "Ex: Solo founder in Paris · ex-Stripe PM",
         vibe: {
           badge: "FOUNDER PROFILER",
           description: "Rapid-fire questions to lock your bio. Keep each reply under 25 words.",
-          accentClass: "text-amber-500",
-          panelClassName: "bg-white"
+          accentClass: "text-accent-yellow",
+          panelClassName: "bg-bg-surface"
         }
       },
       idea: {
         index: 2,
         title: "Ideation 💡",
-        color: "text-cyan-500",
+        color: "text-accent-blue",
         badge: "Step 2",
         headline: "Ideation Lab",
         description: "We’ll search fresh trends, propose 4 non-obvious plays, then pressure-test yours.",
         instructions: [],
-        gradient: "from-cyan-500/10 via-cyan-400/5 to-transparent",
-        chromeTone: "bg-white text-black",
+        gradient: "from-accent-blue/10 via-accent-blue/5 to-transparent",
+        chromeTone: "bg-bg-surface",
         flowId: "flow_ideation",
         seed: "Scan latest trends + my profile, propose 4 novel startup ideas. End by asking which resonates.",
         placeholder: "Tell me which idea resonates or pitch yours.",
         vibe: {
           badge: "IDEATION PARTNER",
           description: "We scan 2025 trendlines + your profile to pitch 4 unique bets. React fast.",
-          accentClass: "text-cyan-300",
-          panelClassName: "bg-gradient-to-b from-[#031924] via-[#04101a] to-[#03070d]"
+          accentClass: "text-accent-blue",
+          panelClassName: "bg-bg-surface"
         }
       },
       sprint: {
         index: 3,
         title: "Sprint ⚡️",
-        color: "text-rose-500",
+        color: "text-status-danger",
         badge: "Step 3",
         headline: "90min Sprint",
         description: "No theory. Tactical checklists with a clear definition of done.",
         instructions: [],
-        gradient: "from-rose-500/10 via-rose-400/5 to-transparent",
-        chromeTone: "bg-white text-black",
+        gradient: "from-status-danger/10 via-status-danger/5 to-transparent",
+        chromeTone: "bg-bg-surface",
         flowId: "flow_sprint",
         seed: "Design a 90-minute execution plan for the chosen idea. Keep it brutal and specific.",
         placeholder: "Ex: Need to validate landing page copy today.",
         vibe: {
           badge: "SPRINT COACH",
           description: "Bite-sized tasks, 30-minute blocks. Expect ruthless focus.",
-          accentClass: "text-rose-300",
-          panelClassName: "bg-gradient-to-b from-[#21040c] via-[#150308] to-[#050104]"
+          accentClass: "text-status-danger",
+          panelClassName: "bg-bg-surface"
         }
       },
       vibecelerator: {
         index: 4,
-        title: "9-Day Vibecelerator",
-        color: "text-violet-300",
-        badge: "Step 4 · Vibe Check",
-        headline: "Momentum bootcamp, 9-day arc.",
-        description: "Each day comes with a challenge + accountability question.",
-        instructions: [
-          "Acknowledge the day’s challenge.",
-          "Share proof of progress (link or description).",
-          "Describe mood/energy so we can adjust."
-        ],
-        gradient: "from-violet-500/30 via-violet-400/5 to-transparent",
+        title: "Vibecelerator 🚀",
+        color: "text-accent-purple",
+        badge: "Step 4",
+        headline: "9-Day Vibecelerator",
+        description: "Momentum bootcamp, 9-day arc.",
+        instructions: [],
+        gradient: "from-accent-purple/10 via-accent-purple/5 to-transparent",
+        chromeTone: "bg-bg-surface",
         flowId: "flow_vibecelerator",
         seed: "Kick off Day 1 of the 9-Day Vibecelerator for this founder. Keep it under 50 words.",
         placeholder: "Log progress or drop a link.",
         vibe: {
           badge: "VIBECELERATOR COACH",
           description: "High-energy check-ins. Micro challenges + vibe tracking.",
-          accentClass: "text-violet-300",
-          panelClassName: "bg-gradient-to-b from-[#1a0b27] via-[#0d0715] to-[#04020a]"
+          accentClass: "text-accent-purple",
+          panelClassName: "bg-bg-surface"
         }
       },
       result: {
         index: 5,
         title: "Verdict 🏁",
-        color: "text-emerald-500",
+        color: "text-brand-primary",
         badge: "Step 5",
         headline: "Verdict",
         description: "Synthesized mentor output coming soon.",
         instructions: [],
-        gradient: "from-emerald-500/10 via-emerald-400/5 to-transparent",
-        chromeTone: "bg-white text-black"
+        gradient: "from-brand-primary/10 via-brand-primary/5 to-transparent",
+        chromeTone: "bg-bg-surface"
       },
       console: {
         index: 6,
         title: "Console 🖥️",
-        color: "text-sky-500",
+        color: "text-accent-blue",
         badge: "Console",
         headline: "Console",
         description: "Ask anything. Router will pick the right mentors.",
         instructions: [],
-        gradient: "from-sky-500/10 via-sky-400/5 to-transparent",
-        chromeTone: "bg-white text-black",
+        gradient: "from-accent-blue/10 via-accent-blue/5 to-transparent",
+        chromeTone: "bg-bg-surface",
         flowId: "flow_console",
         placeholder: "Ask anything. Ex: How do I pitch this seed round?",
         vibe: {
           badge: "TERMINAL MODE",
           description: "Multi-agent console. Expect colored logs + streaming answers.",
-          accentClass: "text-sky-500",
-          panelClassName: "bg-white"
+          accentClass: "text-accent-blue",
+          panelClassName: "bg-bg-surface"
         }
       }
     }),
@@ -275,34 +272,12 @@ export const OnboardingWizard = () => {
   );
 
   const colorToTokens = (color: string | undefined) => {
-    // Map colors to vibrant, distinct pastel colors with good contrast
-    const colorMap: Record<string, { hex: string; pastel: string }> = {
-      "text-yellow-300": { hex: "#fbbf24", pastel: "rgba(251, 191, 36, 0.6)" }, // Strong yellow
-      "text-amber-300": { hex: "#f97316", pastel: "rgba(249, 115, 22, 0.5)" }, // Vibrant orange
-      "text-cyan-300": { hex: "#06b6d4", pastel: "rgba(6, 182, 212, 0.5)" }, // Cool cyan
-      "text-rose-300": { hex: "#f43f5e", pastel: "rgba(244, 63, 94, 0.5)" }, // Bright red
-      "text-violet-300": { hex: "#8b5cf6", pastel: "rgba(139, 92, 246, 0.5)" }, // Deep purple
-      "text-emerald-300": { hex: "#10b981", pastel: "rgba(16, 185, 129, 0.5)" }, // Fresh green
-      "text-sky-300": { hex: "#0ea5e9", pastel: "rgba(14, 165, 233, 0.5)" }, // Bright blue
-      
-      // 500 variants for light mode
-      "text-yellow-500": { hex: "#eab308", pastel: "rgba(234, 179, 8, 0.6)" },
-      "text-amber-500": { hex: "#f59e0b", pastel: "rgba(245, 158, 11, 0.6)" },
-      "text-cyan-500": { hex: "#06b6d4", pastel: "rgba(6, 182, 212, 0.6)" },
-      "text-rose-500": { hex: "#f43f5e", pastel: "rgba(244, 63, 94, 0.6)" },
-      "text-violet-500": { hex: "#8b5cf6", pastel: "rgba(139, 92, 246, 0.6)" },
-      "text-emerald-500": { hex: "#10b981", pastel: "rgba(16, 185, 129, 0.6)" },
-      "text-sky-500": { hex: "#0ea5e9", pastel: "rgba(14, 165, 233, 0.6)" }
-    };
-    
-    // Safety: default to yellow-300 if color is undefined or not found
-    const targetColor = color && colorMap[color] ? color : "text-yellow-300";
-    const mapping = colorMap[targetColor] || colorMap["text-yellow-300"];
-    
+    // Simple map for token lookups if needed for inline styles
+    // But prefer using class names directly
     return {
-      hex: mapping.hex,
-      pastel: mapping.pastel,
-      tailwindColor: targetColor
+      hex: "#22C55E", // Fallback green
+      pastel: "rgba(34, 197, 94, 0.2)",
+      tailwindColor: color || "text-brand-primary"
     };
   };
   const currentConfig = stepConfig[step];
@@ -326,26 +301,20 @@ export const OnboardingWizard = () => {
           const isActive = stageKey === step;
           const isComplete = currentStageIndex > index;
           const isPending = currentStageIndex < index;
-          const tokens = colorToTokens(meta.color);
+          
+          // Dynamic classes based on state
+          const activeClass = isActive ? `border-${meta.color.replace('text-', '')} bg-bg-surface-soft text-text-primary` : "border-border-subtle bg-transparent text-text-muted";
+          const completeClass = isComplete ? "border-brand-primary text-brand-primary bg-brand-primary/10" : "";
           
           return (
             <React.Fragment key={stageKey}>
               {idx > 0 && (
-                <div className={`h-px w-8 ${isComplete ? "bg-green-500" : "bg-gray-700"}`} />
+                <div className={`h-px w-8 ${isComplete ? "bg-brand-primary" : "bg-border-subtle"}`} />
               )}
               <button
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
-                  isComplete 
-                    ? "bg-green-500/20 text-green-400 border border-green-500/50" 
-                    : isActive 
-                    ? "border border-transparent shadow-lg"
-                    : "bg-gray-800/50 text-gray-400 border border-gray-700"
-                } ${isPending ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                style={isActive && !isComplete ? {
-                  backgroundColor: tokens.pastel,
-                  color: "#ffffff",
-                  borderColor: tokens.hex
-                } : {}}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap border ${
+                  isComplete ? completeClass : activeClass
+                } ${isPending ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:border-text-muted"}`}
                 onClick={() => handleStageSelect(stageKey)}
                 disabled={isPending}
               >
@@ -368,16 +337,16 @@ export const OnboardingWizard = () => {
   );
 
   const hero = (
-    <div className={`px-5 py-6 bg-gradient-to-r ${currentConfig.gradient} border-white/5`}>
-      <p className="text-[11px] uppercase tracking-[0.4em] text-white/60 mb-2">{currentConfig.badge}</p>
-      <h1 className="text-2xl font-bold text-white mb-1">{currentConfig.headline}</h1>
-      <p className="text-sm text-white/70 max-w-2xl">{currentConfig.description}</p>
+    <div className={`px-5 py-6 bg-gradient-to-r ${currentConfig.gradient} border-b border-border-subtle`}>
+      <p className="text-[10px] uppercase tracking-[0.2em] text-text-muted mb-2 font-bold">{currentConfig.badge}</p>
+      <h1 className="text-2xl font-bold text-text-primary mb-1 tracking-tight">{currentConfig.headline}</h1>
+      <p className="text-sm text-text-secondary max-w-2xl leading-relaxed">{currentConfig.description}</p>
       {currentConfig.instructions.length > 0 && (
-        <ul className="mt-4 grid gap-2 sm:grid-cols-3 text-sm text-white/80">
+        <ul className="mt-4 grid gap-2 sm:grid-cols-3 text-sm text-text-secondary">
           {currentConfig.instructions.map((item) => (
             <li
               key={item}
-              className="flex items-start gap-2 bg-white/5 rounded-md px-3 py-2 border border-white/10"
+              className="flex items-start gap-2 bg-bg-surface-soft/50 rounded-md px-3 py-2 border border-border-subtle"
             >
               <span className={`${currentConfig.color} text-xs mt-[2px]`}>▸</span>
               <span>{item}</span>
@@ -445,10 +414,10 @@ export const OnboardingWizard = () => {
         />
       )}
       {step === "result" && (
-        <div className="p-10 text-center text-gray-500">
-          <h2 className="text-2xl text-white mb-4">Step 5: Verdict</h2>
+        <div className="p-10 text-center text-text-muted">
+          <h2 className="text-2xl text-text-primary mb-4 font-bold">Step 5: Verdict</h2>
           <p>[Coming Soon: Synthesizer Verdict]</p>
-          <button onClick={() => setStep("console")} className="mt-4 text-yellow-400 border border-yellow-400 px-4 py-2 rounded">Enter Console</button>
+          <button onClick={() => setStep("console")} className="mt-4 text-brand-primary border border-brand-primary px-4 py-2 rounded hover:bg-brand-primary/10 transition-colors">Enter Console</button>
         </div>
       )}
       {step === "console" && (

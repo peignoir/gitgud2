@@ -59,38 +59,38 @@ const JSON_FIELD_TOKENS = [
 const LABEL_REGEX = /\[(profile|router|biz|fund|vehicle|mentor|research|pdf)\]/i;
 
 const LABEL_COLOR_MAP: Record<string, string> = {
-  profile: "#86efac",
-  router: "#facc15",
-  biz: "#5eead4",
-  fund: "#f472b6",
-  vehicle: "#93c5fd",
-  mentor: "#e5e7eb",
-  synth: "#e5e7eb",
-  research: "#7dd3fc",
-  pdf: "#67e8f9"
+  profile: "text-brand-primary",
+  router: "text-accent-yellow",
+  biz: "text-accent-blue",
+  fund: "text-accent-purple",
+  vehicle: "text-accent-blue",
+  mentor: "text-text-secondary",
+  synth: "text-text-secondary",
+  research: "text-accent-blue",
+  pdf: "text-accent-blue"
 };
 
 const ANSI_COLOR_MAP: Record<string, string> = {
-  "30": "#a1a1aa",
-  "31": "#f87171",
-  "32": "#4ade80",
-  "33": "#facc15",
-  "34": "#93c5fd",
-  "35": "#f472b6",
-  "36": "#5eead4",
-  "37": "#f8fafc",
-  "90": "#a1a1aa",
-  "94": "#7dd3fc",
-  "96": "#67e8f9"
+  "30": "text-text-secondary",
+  "31": "text-status-danger",
+  "32": "text-brand-primary",
+  "33": "text-accent-yellow",
+  "34": "text-accent-blue",
+  "35": "text-accent-purple",
+  "36": "text-brand-primary-soft",
+  "37": "text-text-primary",
+  "90": "text-text-muted",
+  "94": "text-accent-blue",
+  "96": "text-accent-blue"
 };
 
 const EXTENDED_COLOR_MAP: Record<string, string> = {
-  "208": "#fb923c"
+  "208": "text-accent-yellow" // Orange-ish in terminal, mapping to yellow for now
 };
 
 const stripAnsi = (value: string) => value.replace(/\x1b\[[0-9;]*m/g, "");
 
-type Segment = { text: string; color?: string; bold?: boolean };
+type Segment = { text: string; colorClass?: string; bold?: boolean };
 type StructuredBlock = {
   label: string;
   raw: string;
@@ -109,7 +109,7 @@ const parseAnsiSegments = (input: string): Segment[] => {
     if (match.index > lastIndex) {
       segments.push({
         text: input.slice(lastIndex, match.index),
-        color: currentClass,
+        colorClass: currentClass,
         bold
       });
     }
@@ -149,7 +149,7 @@ const parseAnsiSegments = (input: string): Segment[] => {
   if (lastIndex < input.length) {
       segments.push({
         text: input.slice(lastIndex),
-        color: currentClass,
+        colorClass: currentClass,
         bold
       });
   }
@@ -230,9 +230,9 @@ const StructuredJsonCard = ({
 
   if (isFounderProfile) {
     return (
-      <div className="rounded-xl border border-white/10 bg-white/5 text-left text-white/80 overflow-hidden">
-        <div className="flex items-center justify-between px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-white/60">
-          <span>Founder Profile Snapshot</span>
+      <div className="rounded-lg border border-border-subtle bg-bg-surface-soft text-left text-text-primary overflow-hidden my-3 shadow-sm">
+        <div className="flex items-center justify-between px-3 py-2 bg-bg-surface border-b border-border-subtle">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-brand-primary">Founder Profile</span>
           <button
             type="button"
             onClick={() => {
@@ -242,28 +242,28 @@ const StructuredJsonCard = ({
               }
               setIsEditing((prev) => !prev);
             }}
-            className="text-[10px] font-semibold uppercase tracking-wide text-white bg-gradient-to-r from-yellow-300 to-emerald-300 border border-yellow-200/70 rounded-full px-3 py-0.5 shadow-[0_0_12px_rgba(251,191,36,0.4)] hover:scale-105 transition-transform"
+            className="text-[10px] font-semibold uppercase tracking-wide text-text-muted hover:text-text-primary transition-colors"
           >
-            {isEditing ? "Cancel" : "Edit Snapshot"}
+            {isEditing ? "Cancel" : "Edit"}
           </button>
         </div>
-        <div className={`space-y-2 px-3 transition-all duration-300 ${isEditing ? "pb-4" : "pb-2 max-h-48 overflow-y-auto"}`}>
+        <div className={`space-y-3 px-3 transition-all duration-300 ${isEditing ? "py-4" : "py-3 max-h-60 overflow-y-auto"}`}>
           {FOUNDER_FIELD_SPECS.map((field) => {
             const val = profileForm[field.key];
             if (!isEditing && (!val || val.trim() === "" || val.trim() === "-")) return null;
             
             return (
               <div key={field.key}>
-                <p className="text-[10px] uppercase tracking-wide text-white/50 mb-0.5">{field.label}</p>
+                <p className="text-[9px] uppercase tracking-wider text-text-muted mb-1">{field.label}</p>
                 {isEditing ? (
                   <textarea
                     value={val ?? ""}
                     onChange={(e) => handleFieldChange(field.key, e.target.value)}
                     rows={field.multiline ? 3 : 1}
-                    className="w-full rounded-lg border border-white/15 bg-black/40 p-2 text-xs text-white outline-none focus:border-yellow-300 focus:ring-1 focus:ring-yellow-300"
+                    className="w-full rounded bg-bg-body border border-border-subtle p-2 text-xs text-text-primary focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none transition-all"
                   />
                 ) : (
-                  <p className="text-xs text-white/90 whitespace-pre-wrap leading-snug">
+                  <p className="text-xs text-text-primary whitespace-pre-wrap leading-relaxed">
                     {val}
                   </p>
                 )}
@@ -272,25 +272,15 @@ const StructuredJsonCard = ({
           })}
         </div>
         {isEditing && (
-          <div className="flex flex-col gap-2 border-t border-white/10 px-3 py-3 bg-black/20">
-            {profileError && <p className="text-xs text-red-400">{profileError}</p>}
+          <div className="flex flex-col gap-2 border-t border-border-subtle px-3 py-3 bg-bg-surface">
+            {profileError && <p className="text-xs text-status-danger">{profileError}</p>}
             <div className="flex items-center justify-end gap-2">
-              <button
-                onClick={() => {
-                  setIsEditing(false);
-                  setProfileForm(buildProfileForm(block.data));
-                  setProfileError(null);
-                }}
-                className="rounded-full border border-white/20 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-gray-300 hover:border-white/40"
-              >
-                Cancel
-              </button>
               <button
                 onClick={handleProfileSave}
                 disabled={profileSaving}
-                className="rounded-full bg-gradient-to-r from-yellow-300 to-emerald-400 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-black shadow-[0_4px_18px_rgba(251,191,36,0.35)] disabled:opacity-60"
+                className="rounded bg-brand-primary px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-text-inverse shadow hover:bg-brand-primary-soft disabled:opacity-60 transition-colors"
               >
-                {profileSaving ? "Saving…" : "Save Snapshot"}
+                {profileSaving ? "Saving…" : "Save Changes"}
               </button>
             </div>
           </div>
@@ -300,22 +290,22 @@ const StructuredJsonCard = ({
   }
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 text-left text-white/80">
-      <div className="flex items-center justify-between px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-white/60">
-        <span>{normalizedLabel || "JSON payload"}</span>
+    <div className="rounded-lg border border-border-subtle bg-bg-surface-soft text-left text-text-primary my-2 overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-2 bg-bg-surface border-b border-border-subtle">
+        <span className="text-[10px] font-mono text-text-muted">{normalizedLabel || "JSON"}</span>
         <button
           type="button"
           onClick={() => setExpanded((prev) => !prev)}
-          className="text-[10px] font-semibold uppercase tracking-wide text-yellow-300 transition hover:text-yellow-200"
+          className="text-[10px] font-semibold uppercase tracking-wide text-accent-blue hover:text-white transition-colors"
         >
-          {expanded ? "Hide details" : "View details"}
+          {expanded ? "Hide" : "View"}
         </button>
       </div>
       {fallbackPreview && !expanded && (
-        <p className="px-3 pb-3 text-sm text-white/80">{fallbackPreview}</p>
+        <p className="px-3 py-2 text-xs text-text-secondary font-mono truncate">{fallbackPreview}</p>
       )}
       {expanded && (
-        <pre className="max-h-64 overflow-y-auto whitespace-pre-wrap rounded-b-xl bg-black/60 px-3 py-3 text-[11px] font-mono text-white/80">
+        <pre className="max-h-64 overflow-y-auto whitespace-pre-wrap bg-bg-body px-3 py-3 text-[10px] font-mono text-text-secondary">
           {prettyJson}
         </pre>
       )}
@@ -341,23 +331,30 @@ const renderConsoleText = (text: string) => {
     const isRouterMeta = ROUTER_INFO_PREFIXES.some((prefix) => trimmed.startsWith(prefix));
     const isCodeFence = trimmed.startsWith("```");
     const labelMatch = stripped.match(LABEL_REGEX);
-    const labelColor = labelMatch ? LABEL_COLOR_MAP[labelMatch[1].toLowerCase()] : undefined;
-    const defaultColor =
-      labelColor ?? (isRouterMeta ? "#fb923c" : isCodeFence ? "#fcd34d" : "#f8fafc");
-    const baseLineClass = cn(isRouterMeta && "italic", isCodeFence && "font-mono");
+    
+    // Map legacy color labels to Tailwind classes
+    let labelClass = "text-brand-primary";
+    if (labelMatch) {
+      const labelKey = labelMatch[1].toLowerCase();
+      labelClass = LABEL_COLOR_MAP[labelKey] || "text-brand-primary";
+    }
+    
+    const defaultClass =
+      labelMatch ? undefined : (isRouterMeta ? "text-accent-yellow italic" : isCodeFence ? "text-accent-yellow font-mono" : "text-text-primary");
+    
+    const baseLineClass = cn("leading-relaxed", isRouterMeta && "italic opacity-80", isCodeFence && "font-mono bg-bg-surface-soft p-1 rounded block my-1");
 
     const segments = parseAnsiSegments(line);
     if (segments.length === 0) {
       if (labelMatch) {
-        const [, label] = labelMatch;
         const labelText = labelMatch[0];
         const rest = stripped.slice(labelText.length);
         return (
           <Fragment key={`${line}-${idx}`}>
-            <span className={cn(baseLineClass, "font-semibold")} style={{ color: labelColor }}>
+            <span className={cn(baseLineClass, "font-bold uppercase tracking-wider text-[10px] mr-2", labelClass)}>
               {labelText}
             </span>
-            <span className={baseLineClass} style={{ color: labelColor }}>
+            <span className={cn(baseLineClass, labelClass)}>
               {rest}
             </span>
             {idx < lines.length - 1 && <br />}
@@ -366,7 +363,7 @@ const renderConsoleText = (text: string) => {
       }
       return (
         <Fragment key={`${line}-${idx}`}>
-          <span className={baseLineClass} style={{ color: defaultColor }}>
+          <span className={cn(baseLineClass, defaultClass)}>
             {stripped}
           </span>
           {idx < lines.length - 1 && <br />}
@@ -379,8 +376,7 @@ const renderConsoleText = (text: string) => {
         {segments.map((segment, segIdx) => (
           <span
             key={`${idx}-${segIdx}`}
-            className={cn(baseLineClass, segment.bold && "font-semibold")}
-            style={{ color: segment.color ?? defaultColor }}
+            className={cn(baseLineClass, segment.bold && "font-bold", segment.colorClass || defaultClass)}
           >
             {segment.text}
           </span>
@@ -471,30 +467,32 @@ const MessageBubble = memo(({ message, showDebug = false, onProfileSave }: Messa
   }, [cleanedContent, isUser]);
 
   return (
-    <div className="w-full py-2">
-      <div className={cn("mb-1 text-[10px] font-mono uppercase tracking-wider opacity-60", isUser ? "text-cyan-600" : "text-violet-600")}>
-        {isUser ? "You" : "GitGud Mentor"}
-      </div>
-      <div
-        className={cn(
-          "font-mono text-sm leading-relaxed whitespace-pre-wrap break-words",
-          isUser ? "text-gray-800" : "text-gray-700",
-          message.pending && "opacity-70"
-        )}
-      >
-        {renderedContent || (message.pending ? <span className="animate-pulse">...</span> : "")}
-      </div>
-      {!isUser && !showDebug && structuredBlocks.length > 0 && (
-        <div className="mt-2 space-y-2">
-          {structuredBlocks.map((block, idx) => (
-            <StructuredJsonCard
-              key={`${message.id}-json-${idx}`}
-              block={block}
-              onProfileSave={onProfileSave}
-            />
-          ))}
+    <div className={cn("w-full py-4 border-b border-border-subtle/50 last:border-0", isUser ? "bg-bg-surface-soft/30" : "")}>
+      <div className="max-w-3xl mx-auto px-4">
+        <div className={cn("mb-2 text-[10px] font-bold uppercase tracking-widest", isUser ? "text-accent-blue" : "text-brand-primary")}>
+          {isUser ? "You" : "GitGud Mentor"}
         </div>
-      )}
+        <div
+          className={cn(
+            "text-sm leading-7 whitespace-pre-wrap break-words font-sans",
+            isUser ? "text-text-primary" : "text-text-secondary",
+            message.pending && "opacity-70"
+          )}
+        >
+          {renderedContent || (message.pending ? <span className="animate-pulse">...</span> : "")}
+        </div>
+        {!isUser && !showDebug && structuredBlocks.length > 0 && (
+          <div className="mt-4 space-y-3">
+            {structuredBlocks.map((block, idx) => (
+              <StructuredJsonCard
+                key={`${message.id}-json-${idx}`}
+                block={block}
+                onProfileSave={onProfileSave}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 });

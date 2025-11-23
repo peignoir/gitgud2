@@ -4,6 +4,29 @@
 
 @layer base {
   :root {
+    /* Default to dark theme variables per spec */
+    --bg-body: #050816;
+    --bg-surface: #0B1020;
+    --bg-surface-soft: #111827;
+    --border-subtle: #1F2937;
+    --border-strong: #374151;
+
+    --brand-primary: #22C55E;
+    --brand-primary-soft: #16A34A;
+    --accent-blue: #38BDF8;
+    --accent-purple: #A855F7;
+    --accent-yellow: #FACC15;
+
+    --text-primary: #E5E7EB;
+    --text-secondary: #9CA3AF;
+    --text-muted: #6B7280;
+    --text-inverse: #020617;
+
+    --status-success: #22C55E;
+    --status-warning: #F59E0B;
+    --status-danger: #EF4444;
+    --status-info: #38BDF8;
+
     color-scheme: dark;
   }
 
@@ -14,9 +37,13 @@
   }
 
   body {
-    @apply min-h-dvh bg-[#0e111b] text-white font-mono;
+    background-color: var(--bg-body);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+    @apply min-h-dvh antialiased;
   }
 
+  /* Login mode override if needed, but we prefer dark for main app */
   body.login-mode,
   html.login-mode {
     color-scheme: light;
@@ -45,10 +72,10 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--border-strong);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--text-muted);
 }

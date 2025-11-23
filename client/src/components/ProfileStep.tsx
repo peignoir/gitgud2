@@ -57,14 +57,11 @@ interface ProfileStepProps {
   };
 }
 
-const DEFAULT_SEED =
-  "Introduce yourself and start the interview. I am ready to build my founder profile.";
-
 const DEFAULT_VIBE = {
   badge: "AGENT ONLINE",
   description: "Fast, terse YC-style coaching.",
-  accentClass: "text-yellow-300",
-  panelClassName: "bg-[#0e111b]"
+  accentClass: "text-brand-primary",
+  panelClassName: "bg-bg-surface"
 };
 
 export const ProfileStep: React.FC<ProfileStepProps> = ({
@@ -84,7 +81,7 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
   const bottomRef = useRef<HTMLDivElement>(null);
   const seedRef = useRef(false);
   const [draft, setDraft] = useState("");
-  const [showDebug, setShowDebug] = useState(false); // Always start with debug hidden
+  const [showDebug, setShowDebug] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
 
   const [profileData, setProfileData] = useState<CachedProfile>({});
@@ -409,38 +406,6 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
     }
   };
 
-  // Debug: Check if profile is "complete" by looking for a signal in the messages
-  // In a real app, the backend would send a specific event, but for now we can adds a "manual" next button
-  // or look for keywords. We'll add a manual "I'm done" button for this MVP phase.
-  // Calculate profile completion
-  const requiredFields = ['founder', 'background', 'stage', 'goals'];
-  const filledFields = requiredFields.filter(field => profileData[field as keyof typeof profileData]);
-  const completionPercent = hasExistingProfile ? 100 : Math.round((filledFields.length / requiredFields.length) * 100);
-  
-  // Alternative completion check: if user has had substantial back-and-forth
-  const userMessageCount = messages.filter(m => m.role === "user").length;
-  const hasSubstantialConversation = userMessageCount >= 3;
-  
-  // Show Next button if profile is complete OR user has had enough interaction OR has existing profile OR READY signal
-  const isProfileFlow = !flowId || flowId === 'flow_profile';
-  let isStepComplete = hasExistingProfile || profileData.ready;
-
-  if (!isStepComplete) {
-    if (isProfileFlow) {
-      // Fast track: If we have founder name and background, we are good to go.
-      isStepComplete = (!!profileData.founder && !!profileData.background) || completionPercent >= 100 || (completionPercent >= 50 && hasSubstantialConversation);
-    } else {
-      // Other flows: rely on READY signal or substantial conversation
-      isStepComplete = hasSubstantialConversation;
-    }
-  }
-  
-  // Alias for backward compatibility in JSX
-  const isProfileComplete = isStepComplete;
-  
-  // Force show next button if user has sent enough messages (fallback)
-  const showNextButton = isProfileComplete || userMessageCount >= 5;
-
   // Calculate profile depth (word count as proxy)
   const wordCount = Object.values(displayProfile).join(' ').split(/\s+/).filter(Boolean).length;
   // Also count user's total input
@@ -453,26 +418,27 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
   
   const totalWordCount = hasExistingProfile ? 200 : (wordCount > 0 ? wordCount : userWordCount); // Assume existing profiles are "high" depth
   const profileDepth = totalWordCount < 50 ? 'low' : totalWordCount < 150 ? 'medium' : 'high';
-  const depthColor = profileDepth === 'low' ? 'text-yellow-500' : profileDepth === 'medium' ? 'text-blue-500' : 'text-green-500';
-  const depthEmoji = profileDepth === 'low' ? '📝' : profileDepth === 'medium' ? '📊' : '🎯';
+  const depthColor = profileDepth === 'low' ? 'text-status-warning' : profileDepth === 'medium' ? 'text-status-info' : 'text-status-success';
+  
+  // Alias for backward compatibility in JSX
+  const isProfileComplete = hasExistingProfile || profileData.ready;
+  const showNextButton = isProfileComplete || userMessageCount >= 5;
 
   return (
-    <>
-    <div className={`relative flex flex-col h-full ${mergedVibe.panelClassName}`}>
+    <div className="relative flex flex-col h-full bg-bg-surface">
       {/* Header Area */}
-      <div className="px-4 py-3 border-b border-white/5 bg-white/5/30 backdrop-blur-sm">
+      <div className="px-4 py-3 border-b border-border-subtle bg-bg-surface-soft">
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-3">
-            <span className={`text-[10px] font-semibold tracking-[0.3em] uppercase ${mergedVibe.accentClass}`}>
+            <span className={`text-[10px] font-semibold tracking-[0.3em] uppercase ${mergedVibe.accentClass.replace('text-', 'text-brand-')}`}>
               {mergedVibe.badge}
             </span>
             
             <div className="flex items-center gap-3">
-              {/* Debug Toggle */}
               <button
                 onClick={() => setShowDebug(!showDebug)}
                 className={`text-[10px] uppercase tracking-wider transition-colors ${
-                  showDebug ? "text-yellow-400" : "text-gray-500 hover:text-white"
+                  showDebug ? "text-accent-yellow" : "text-text-muted hover:text-text-primary"
                 }`}
               >
                 {showDebug ? "[Hide]" : "[Debug]"}
@@ -481,22 +447,7 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
           </div>
           
           <div className="flex items-start justify-between gap-4 flex-wrap">
-            <p className="text-sm text-gray-300 max-w-xl">{mergedVibe.description}</p>
-            
-            {/* Progress Indicator */}
-            {(completionPercent > 0 || userMessageCount > 0) && (
-              <div className="flex items-center gap-2 text-xs shrink-0">
-                <div className="w-20 h-1.5 bg-gray-800 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-yellow-500 to-green-500 transition-all duration-500"
-                    style={{ width: `${Math.max(completionPercent, userMessageCount * 25)}%` }}
-                  />
-                </div>
-                <span className={`${depthColor}`}>
-                  {depthEmoji} {Math.max(completionPercent, Math.min(100, userMessageCount * 25))}%
-                </span>
-              </div>
-            )}
+            <p className="text-sm text-text-secondary max-w-xl">{mergedVibe.description}</p>
           </div>
         </div>
       </div>
@@ -505,7 +456,7 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
       <div
         ref={chatContainerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto p-4 space-y-4 pb-24 min-h-0"
+        className="flex-1 overflow-y-auto p-4 space-y-4 pb-24 min-h-0 bg-bg-body"
       >
         {messages.map((msg) => (
           <MessageBubble
@@ -516,14 +467,8 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
           />
         ))}
         {!hasExistingProfile && isProfileComplete && (
-          <div className={`mt-4 p-3 border rounded-lg ${
-            profileDepth === 'high' 
-              ? 'bg-green-500/10 border-green-500/30' 
-              : 'bg-green-500/10 border-green-500/30'
-          }`}>
-            <p className={`text-sm ${
-              profileDepth === 'high' ? 'text-green-300' : 'text-green-300'
-            }`}>
+          <div className="mt-4 p-3 border border-status-success/30 bg-status-success/10 rounded-lg">
+            <p className="text-sm text-status-success">
               ✅ Profile scanned! Let's dive in.
             </p>
           </div>
@@ -535,51 +480,40 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
       {showNewMessageNotice && (
         <button
           onClick={jumpToLatest}
-          className="absolute bottom-28 right-6 rounded-full border border-white/20 bg-black/70 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white shadow-lg backdrop-blur transition hover:border-white/40 hover:bg-black/80"
+          className="absolute bottom-28 right-6 rounded-full border border-border-strong bg-bg-surface-soft px-4 py-2 text-xs font-semibold uppercase tracking-wide text-text-primary shadow-lg backdrop-blur transition hover:border-border-subtle hover:bg-bg-surface"
         >
           New mentor reply ↓
         </button>
       )}
 
       {/* Input Area */}
-      <div className="p-4 bg-black/80 backdrop-blur-md border-t border-white/10 relative z-10">
+      <div className="p-4 bg-bg-surface border-t border-border-subtle relative z-10">
           {/* Status/Next Area */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex flex-col justify-center">
-            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold">
-              <span className={`w-1.5 h-1.5 rounded-full ${isStreaming ? "bg-yellow-300 animate-ping" : (showNextButton ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "bg-gray-500")}`} />
+            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-text-muted font-bold">
+              <span className={`w-1.5 h-1.5 rounded-full ${isStreaming ? "bg-accent-yellow animate-ping" : (showNextButton ? "bg-status-success shadow-[0_0_10px_rgba(34,197,94,0.5)]" : "bg-text-muted")}`} />
               {isStreaming
                 ? "COOKING 🍳..."
                 : profileData.ready
                   ? "READY ✨"
                   : showNextButton
-                    ? isProfileFlow
-                      ? "IDENTITY LOCKED 🔒"
-                      : "STEP COMPLETE ✅"
-                    : isProfileFlow
-                      ? displayProfile.founder
-                        ? "SCANNING COMPLETE 📡"
-                        : "SCANNING... 📡"
-                      : "WAITING..."}
+                    ? "STEP COMPLETE ✅"
+                    : "WAITING..."}
             </div>
-            {!showNextButton && !isStreaming && isProfileFlow && (
-              <span className="text-[10px] text-yellow-500/80 mt-1 animate-pulse">
-                {displayProfile.founder ? "* Reviewing profile..." : "* Need name & background"}
-              </span>
-            )}
           </div>
 
           <button
             onClick={onComplete}
             disabled={!showNextButton}
-            className={`flex items-center gap-3 px-6 py-2.5 rounded-full text-sm font-black tracking-wide transition-all duration-300 ${
+            className={`flex items-center gap-3 px-6 py-2.5 rounded-full text-sm font-bold tracking-wide transition-all duration-300 ${
               showNextButton
-                ? "bg-gradient-to-r from-amber-300 via-yellow-300 to-lime-300 text-gray-900 shadow-[0_4px_24px_rgba(251,191,36,0.35)] hover:shadow-[0_8px_28px_rgba(251,191,36,0.45)] hover:scale-105 active:scale-95 border border-yellow-200/60"
-                : "bg-white/5 text-gray-600 border border-white/10 cursor-not-allowed opacity-50 grayscale"
+                ? "bg-brand-primary text-text-inverse shadow-lg hover:bg-brand-primary-soft hover:scale-105 active:scale-95"
+                : "bg-bg-surface-soft text-text-muted border border-border-subtle cursor-not-allowed opacity-50 grayscale"
             }`}
           >
-            <span className="text-base">NEXT STEP</span>
-            <svg className="w-4 h-4" viewBox="0 0 24 24" stroke="currentColor" fill="none" strokeWidth={2}>
+            <span className="text-xs">NEXT STEP</span>
+            <svg className="w-3 h-3" viewBox="0 0 24 24" stroke="currentColor" fill="none" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M13 6l6 6-6 6" />
             </svg>
           </button>
@@ -587,7 +521,7 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
 
         {/* Input Box */}
         <div className="flex flex-col gap-2 group/input">
-          <div className="flex items-end gap-2 bg-black/40 rounded-xl p-2 border border-white/10 focus-within:border-yellow-400/50 focus-within:bg-white/5 transition-all duration-300 focus-within:shadow-[0_0_20px_rgba(250,204,21,0.1)]">
+          <div className="flex items-end gap-2 bg-bg-surface-soft rounded-xl p-2 border border-border-subtle focus-within:border-brand-primary focus-within:bg-bg-surface transition-all duration-300 shadow-sm">
             <textarea
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -599,8 +533,8 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
               onChange={(e) => setDraft(e.target.value)}
               placeholder={placeholder}
               rows={1}
-              className="flex-1 bg-transparent text-white placeholder-gray-500 outline-none min-w-0 py-2.5 text-base resize-none max-h-32 overflow-y-auto font-medium"
-              style={{ WebkitTextFillColor: "#fff" }}
+              className="flex-1 bg-transparent text-text-primary placeholder-text-muted outline-none min-w-0 py-2.5 text-base resize-none max-h-32 overflow-y-auto font-medium"
+              style={{ WebkitTextFillColor: "var(--text-primary)" }}
               onInput={(e) => {
                 const target = e.target as HTMLTextAreaElement;
                 target.style.height = 'auto';
@@ -610,7 +544,7 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
 
             {/* File Upload Button */}
             <label
-              className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-white/10 cursor-pointer transition-all shrink-0"
+              className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-bg-body cursor-pointer transition-all shrink-0"
               title="Attach PDF resume"
             >
               <input
@@ -621,10 +555,10 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
                 className="hidden"
               />
               {uploadingFile ? (
-                <div className="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
               ) : (
                 <svg
-                  className="w-5 h-5 text-gray-400 hover:text-yellow-300 transition"
+                  className="w-5 h-5 text-text-muted hover:text-brand-primary transition"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -645,8 +579,8 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
               disabled={!draft.trim()}
               className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 shrink-0 ${
                 draft.trim() 
-                  ? "bg-yellow-400 text-black hover:bg-yellow-300 hover:scale-110 hover:rotate-3 shadow-lg shadow-yellow-400/20" 
-                  : "bg-white/5 text-gray-600 cursor-not-allowed"
+                  ? "bg-brand-primary text-text-inverse hover:bg-brand-primary-soft hover:scale-105 shadow-md" 
+                  : "bg-bg-body text-text-muted cursor-not-allowed"
               }`}
             >
               <svg className="w-4 h-4 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -656,17 +590,15 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
           </div>
           
           <div className="flex items-center justify-between px-1">
-            <span className="text-[10px] text-gray-500 font-mono">
+            <span className="text-[10px] text-text-muted font-mono">
               💡 Upload resume/deck
             </span>
-            <span className="text-[10px] text-gray-600 font-mono">
+            <span className="text-[10px] text-text-muted font-mono">
               ⏎ to send
             </span>
           </div>
         </div>
       </div>
     </div>
-
-  </>
   );
 };

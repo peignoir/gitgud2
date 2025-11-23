@@ -6,48 +6,81 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        bg: {
+          body: "var(--bg-body)",
+          surface: "var(--bg-surface)",
+          "surface-soft": "var(--bg-surface-soft)",
+        },
+        border: {
+          subtle: "var(--border-subtle)",
+          strong: "var(--border-strong)",
+        },
         brand: {
-          DEFAULT: "#5B5FFB",
-          muted: "#C7C9FF",
-          ink: "#0F172A"
-        },
-        surface: {
-          DEFAULT: "#F7F3EC",
-          card: "#FFFFFF",
-          panel: "#F1EAE1",
-          accent: "#E2ECFF",
-          border: "#E2DAD0"
-        },
-        ink: {
-          DEFAULT: "#1D2939",
-          subtle: "#475467",
-          muted: "#667085"
+          primary: "var(--brand-primary)",
+          "primary-soft": "var(--brand-primary-soft)",
         },
         accent: {
-          orange: "#D97A35",
-          teal: "#18B69B",
-          purple: "#A855F7",
-          lime: "#5EEAD4"
+          blue: "var(--accent-blue)",
+          purple: "var(--accent-purple)",
+          yellow: "var(--accent-yellow)",
+        },
+        text: {
+          primary: "var(--text-primary)",
+          secondary: "var(--text-secondary)",
+          muted: "var(--text-muted)",
+          inverse: "var(--text-inverse)",
+        },
+        status: {
+          success: "var(--status-success)",
+          warning: "var(--status-warning)",
+          danger: "var(--status-danger)",
+          info: "var(--status-info)",
         }
-      },
-      boxShadow: {
-        glow: "0 35px 70px rgba(15, 23, 42, 0.2)",
-        card: "0 20px 45px rgba(15, 23, 42, 0.08)"
       },
       fontFamily: {
         sans: [
-          '"SF Pro Display"',
-          '"Inter"',
+          "system-ui",
           "-apple-system",
           "BlinkMacSystemFont",
+          '"SF Pro Text"',
           '"Segoe UI"',
           "sans-serif"
+        ],
+        mono: [
+          '"SF Mono"',
+          "Menlo",
+          "Monaco",
+          "Consolas",
+          '"Liberation Mono"',
+          '"Courier New"',
+          "monospace"
         ]
       }
     }
   },
-  plugins: [require("tailwindcss-animate")]
+  plugins: [require("tailwindcss-animate")],
+  safelist: [
+    // Safelist specific dynamic classes used in OnboardingWizard
+    'text-brand-primary',
+    'text-accent-blue',
+    'text-accent-purple',
+    'text-accent-yellow',
+    'text-status-danger',
+    'text-status-success',
+    'text-status-warning',
+    'border-brand-primary',
+    'border-accent-blue',
+    'border-accent-purple',
+    'border-accent-yellow',
+    'border-status-danger',
+    'border-status-success',
+    'bg-brand-primary',
+    'bg-accent-blue',
+    'bg-accent-purple',
+    'bg-accent-yellow',
+    'bg-status-danger',
+    'bg-status-success'
+  ]
 };
 
 export default config;
-
