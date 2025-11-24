@@ -22,6 +22,29 @@ type StepMeta = {
   vibe?: React.ComponentProps<typeof ProfileStep>["vibe"];
 };
 
+const StepSummary = ({ meta }: { meta: StepMeta }) => {
+  const quickTips = meta.instructions.slice(0, 2);
+  return (
+    <section className="rounded-3xl border border-white/10 bg-bg-surface px-4 py-4">
+      <p className="text-[10px] uppercase tracking-[0.4em] text-text-muted">{meta.badge}</p>
+      <div className="mt-2 space-y-2">
+        <h1 className="text-xl font-semibold text-text-primary">{meta.headline}</h1>
+        <p className="text-sm text-text-secondary">{meta.description}</p>
+      </div>
+      {quickTips.length > 0 && (
+        <ul className="mt-4 space-y-2 text-sm text-text-primary opacity-80">
+          {quickTips.map((item) => (
+            <li key={item} className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-brand-primary" />
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+};
+
 export const OnboardingWizard = () => {
   const [step, setStep] = useState<Step>("login");
   const [userId, setUserId] = useState<string>("");
@@ -270,149 +293,103 @@ export const OnboardingWizard = () => {
   };
 
   const stageNav = (
-    <div className="px-4 py-3 overflow-x-auto">
-      <div className="flex items-center gap-3 min-w-max">
-        {stageOrder.slice(1).map((stageKey, idx) => {
-          const index = idx + 1; // Skip login step
-          const meta = stepConfig[stageKey];
-          const isActive = stageKey === step;
-          const isComplete = currentStageIndex > index;
-          const isPending = currentStageIndex < index;
-          const tokens = colorToTokens(meta.color);
-          
-          return (
-            <React.Fragment key={stageKey}>
-              {idx > 0 && (
-                <div className={`h-px w-8 ${isComplete ? "bg-green-500" : "bg-gray-700"}`} />
-              )}
-              <button
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
-                  isComplete 
-                    ? "bg-green-500/20 text-green-400 border border-green-500/50" 
-                    : isActive 
-                    ? "border border-transparent shadow-lg"
-                    : "bg-gray-800/50 text-gray-400 border border-gray-700"
-                } ${isPending ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                style={isActive && !isComplete ? {
-                  backgroundColor: tokens.pastel,
-                  color: "#ffffff",
-                  borderColor: tokens.hex
-                } : {}}
-                onClick={() => handleStageSelect(stageKey)}
-                disabled={isPending}
-              >
-                {isComplete ? (
-                  <span className="flex items-center gap-1.5">
-                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    {meta.title}
-                  </span>
-                ) : (
-                  meta.title
-                )}
-              </button>
-            </React.Fragment>
-          );
-        })}
-      </div>
-    </div>
-  );
+    <div className="flex items-center gap-2 py-1">
+      {stageOrder.slice(1).map((stageKey) => {
+        const meta = stepConfig[stageKey];
+        const stageIndex = stageOrder.indexOf(stageKey);
+        const isActive = step === stageKey;
+        const isComplete = currentStageIndex > stageIndex;
+        const isLocked = currentStageIndex < stageIndex;
+        const tokens = colorToTokens(meta.color);
 
-  const hero = (
-    <div className={`px-5 py-6 bg-gradient-to-r ${currentConfig.gradient} border-white/5`}>
-      <p className="text-[11px] uppercase tracking-[0.4em] text-white/60 mb-2">{currentConfig.badge}</p>
-      <h1 className="text-2xl font-bold text-white mb-1">{currentConfig.headline}</h1>
-      <p className="text-sm text-white/70 max-w-2xl">{currentConfig.description}</p>
-      {currentConfig.instructions.length > 0 && (
-        <ul className="mt-4 grid gap-2 sm:grid-cols-3 text-sm text-white/80">
-          {currentConfig.instructions.map((item) => (
-            <li
-              key={item}
-              className="flex items-start gap-2 bg-white/5 rounded-md px-3 py-2 border border-white/10"
-            >
-              <span className={`${currentConfig.color} text-xs mt-[2px]`}>▸</span>
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
-      )}
+        return (
+          <button
+            key={stageKey}
+            disabled={isLocked}
+            onClick={() => handleStageSelect(stageKey)}
+            className={`rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition ${
+              isActive
+                ? "shadow-lg text-text-inverse"
+                : isComplete
+                ? "text-text-primary"
+                : "text-text-muted"
+            } ${isLocked ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
+            style={
+              isActive
+                ? {
+                    backgroundColor: tokens.pastel,
+                    borderColor: tokens.hex
+                  }
+                : isComplete
+                ? { borderColor: "rgba(255,255,255,0.2)", backgroundColor: "rgba(255,255,255,0.04)" }
+                : { borderColor: "rgba(255,255,255,0.12)", backgroundColor: "transparent" }
+            }
+          >
+            {meta.title}
+          </button>
+        );
+      })}
     </div>
   );
-  
+ 
   if (step === "login") {
     return <LoginScreen onLogin={handleLogin} />;
   }
   
   return (
     <Layout 
-      step={currentConfig.index}
-      totalSteps={6}
-      stepTitle={currentConfig.title}
-      stepColor={currentConfig.color}
       topNav={stageNav}
-      hero={hero}
       onReset={handleReset}
-      chromeTone={currentConfig.chromeTone}
       contentClassName={currentConfig.contentClassName}
     >
-      {step === "profile" && (
-        <ProfileStep 
-          userId={userId} 
-          flowId={currentConfig.flowId}
-          overrideSeed={currentConfig.seed}
-          placeholder={currentConfig.placeholder}
-          vibe={currentConfig.vibe}
-          onComplete={() => setStep("idea")}
-        />
-      )}
-      {step === "idea" && (
-        <ProfileStep
-          userId={userId}
-          flowId={currentConfig.flowId}
-          onComplete={() => setStep("sprint")}
-          overrideSeed={currentConfig.seed}
-          placeholder={currentConfig.placeholder}
-          vibe={currentConfig.vibe}
-        />
-      )}
-      {step === "sprint" && (
-        <ProfileStep
-          userId={userId}
-          flowId={currentConfig.flowId}
-          onComplete={() => setStep("vibecelerator")}
-          overrideSeed={currentConfig.seed}
-          placeholder={currentConfig.placeholder}
-          vibe={currentConfig.vibe}
-        />
-      )}
-      {step === "vibecelerator" && (
-        <ProfileStep
-          userId={userId}
-          flowId={currentConfig.flowId}
-          onComplete={() => setStep("result")}
-          overrideSeed={currentConfig.seed}
-          placeholder={currentConfig.placeholder}
-          vibe={currentConfig.vibe}
-        />
-      )}
-      {step === "result" && (
-        <div className="p-10 text-center text-gray-500">
-          <h2 className="text-2xl text-white mb-4">Step 5: Verdict</h2>
-          <p>[Coming Soon: Synthesizer Verdict]</p>
-          <button onClick={() => setStep("console")} className="mt-4 text-yellow-400 border border-yellow-400 px-4 py-2 rounded">Enter Console</button>
-        </div>
-      )}
-      {step === "console" && (
-        <ProfileStep 
-          userId={userId} 
-          flowId={currentConfig.flowId}
-          onComplete={() => {}} 
-          overrideSeed={currentConfig.seed}
-          placeholder={currentConfig.placeholder}
-          vibe={currentConfig.vibe}
-        /> 
-      )}
+      <StepSummary meta={currentConfig} />
+      <div className="flex-1 min-h-0">
+        {step === "profile" && (
+          <ProfileStep
+            userId={userId}
+            flowId={currentConfig.flowId}
+            overrideSeed={currentConfig.seed}
+            placeholder={currentConfig.placeholder}
+            vibe={currentConfig.vibe}
+            onComplete={() => setStep("idea")}
+          />
+        )}
+        {step !== "profile" && step !== "result" && step !== "console" && (
+          <ProfileStep
+            userId={userId}
+            flowId={currentConfig.flowId}
+            onComplete={() => {
+              const nextStep = stageOrder[currentStageIndex + 1] ?? "result";
+              setStep(nextStep);
+            }}
+            overrideSeed={currentConfig.seed}
+            placeholder={currentConfig.placeholder}
+            vibe={currentConfig.vibe}
+          />
+        )}
+        {step === "result" && (
+          <div className="flex flex-1 flex-col items-center justify-center rounded-3xl border border-white/10 bg-bg-surface text-center text-text-secondary">
+            <h2 className="text-2xl text-text-primary mb-2">Verdict</h2>
+            <p className="text-sm">Synthesizer output coming soon.</p>
+            <button
+              onClick={() => setStep("console")}
+              className="mt-6 rounded-full border border-brand-primary px-5 py-2 text-sm font-semibold text-brand-primary hover:bg-brand-primary hover:text-text-inverse transition"
+            >
+              Enter Console
+            </button>
+          </div>
+        )}
+        {step === "console" && (
+          <ProfileStep
+            userId={userId}
+            flowId={currentConfig.flowId}
+            onComplete={() => {}}
+            overrideSeed={currentConfig.seed}
+            placeholder={currentConfig.placeholder}
+            vibe={currentConfig.vibe}
+          />
+        )}
+      </div>
     </Layout>
   );
 };

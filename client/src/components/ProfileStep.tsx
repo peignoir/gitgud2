@@ -41,9 +41,7 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
   );
   const { messages, isStreaming, sendMessage } = useChat(userId, flowId);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const seedRef = useRef(false);
   const [draft, setDraft] = useState("");
-  const [showDebug, setShowDebug] = useState(false); // Always start with debug hidden
   const [uploadingFile, setUploadingFile] = useState(false);
   const stripAnsi = (value: string) => value.replace(/\x1b\[[0-9;]*m/g, "");
   const sanitize = (value?: string) =>
@@ -265,36 +263,9 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
     }
   }, [messages]);
 
-  // Initial greeting if empty - but SKIP for returning users
-  useEffect(() => {
-    if (messages.length === 0 && !seedRef.current) {
-      seedRef.current = true;
-      // ONLY send seed message if this is NOT a returning user with existing profile
-      if (!hasExistingProfile) {
-        sendMessage(overrideSeed || DEFAULT_SEED);
-      }
-      // For returning users: skip AI entirely, just show welcome card
-    }
-  }, [messages.length, sendMessage, overrideSeed, hasExistingProfile]);
-
   const handleSend = async () => {
     if (!draft.trim()) return;
     const text = draft.trim();
-    
-    // Handle commands
-    if (text.startsWith('/')) {
-      if (text === '/show' || text === '/debug') {
-        setShowDebug(!showDebug);
-        setDraft("");
-        return;
-      }
-      if (text === '/hide') {
-        setShowDebug(false);
-        setDraft("");
-        return;
-      }
-    }
-    
     setDraft("");
     await sendMessage(text);
   };
@@ -375,242 +346,113 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
   // Force show next button if user has sent enough messages (fallback)
   const showNextButton = isProfileComplete || userMessageCount >= 5;
 
-  // Calculate profile depth (word count as proxy)
-  const wordCount = Object.values(profileData).join(' ').split(/\s+/).filter(Boolean).length;
-  // Also count user's total input
-  const userWordCount = messages
-    .filter(m => m.role === "user")
-    .map(m => m.content)
-    .join(' ')
-    .split(/\s+/)
-    .filter(Boolean).length;
-  
-  const totalWordCount = hasExistingProfile ? 200 : (wordCount > 0 ? wordCount : userWordCount); // Assume existing profiles are "high" depth
-  const profileDepth = totalWordCount < 50 ? 'low' : totalWordCount < 150 ? 'medium' : 'high';
-  const depthColor = profileDepth === 'low' ? 'text-yellow-500' : profileDepth === 'medium' ? 'text-blue-500' : 'text-green-500';
-  const depthEmoji = profileDepth === 'low' ? '📝' : profileDepth === 'medium' ? '📊' : '🎯';
+  const statusLabel = isStreaming
+    ? "Agent responding"
+    : showNextButton
+    ? "Ready for next step"
+    : "Waiting for input";
+  const readyCopy = overrideSeed || mergedVibe.description || DEFAULT_SEED;
 
   return (
-    <div className={`flex flex-col h-full ${mergedVibe.panelClassName}`}>
-      {/* Header Area */}
-      <div className="px-4 py-3 border-b border-white/5 bg-white/5/30 backdrop-blur-sm">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between gap-3">
-            <span className={`text-[10px] font-semibold tracking-[0.3em] uppercase ${mergedVibe.accentClass}`}>
-              {mergedVibe.badge}
-            </span>
-            
-            <div className="flex items-center gap-3">
-              {/* Debug Toggle */}
-              <button
-                onClick={() => setShowDebug(!showDebug)}
-                className={`text-[10px] uppercase tracking-wider transition-colors ${
-                  showDebug ? "text-yellow-400" : "text-gray-500 hover:text-white"
-                }`}
-              >
-                {showDebug ? "[Hide]" : "[Debug]"}
-              </button>
+    <div
+      className={`flex h-full flex-col rounded-3xl border border-white/10 bg-bg-surface-soft ${mergedVibe.panelClassName || ""}`}
+    >
+      <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+        <span className={`text-[10px] uppercase tracking-[0.4em] ${mergedVibe.accentClass || "text-brand-primary"}`}>
+          {mergedVibe.badge}
+        </span>
+        <span className="flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-text-muted">
+          <span
+            className={`h-1.5 w-1.5 rounded-full ${
+              isStreaming
+                ? "bg-brand-primary animate-pulse"
+                : showNextButton
+                ? "bg-brand-primary"
+                : "bg-border-subtle"
+            }`}
+          />
+          {statusLabel}
+        </span>
+      </div>
+
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <div className="h-full overflow-y-auto px-4 py-4 space-y-3">
+          {messages.length === 0 && (
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-text-primary">
+              <p className="text-[10px] uppercase tracking-[0.4em] text-text-muted">Ready when you are</p>
+              <p className="mt-2 whitespace-pre-line">{readyCopy}</p>
+              {placeholder && <p className="mt-2 text-xs text-text-secondary">{placeholder}</p>}
             </div>
-          </div>
-          
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <p className="text-sm text-gray-300 max-w-xl">{mergedVibe.description}</p>
-            
-            {/* Progress Indicator */}
-            {(completionPercent > 0 || userMessageCount > 0) && (
-              <div className="flex items-center gap-2 text-xs shrink-0">
-                <div className="w-20 h-1.5 bg-gray-800 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-yellow-500 to-green-500 transition-all duration-500"
-                    style={{ width: `${Math.max(completionPercent, userMessageCount * 25)}%` }}
-                  />
-                </div>
-                <span className={`${depthColor}`}>
-                  {depthEmoji} {Math.max(completionPercent, Math.min(100, userMessageCount * 25))}%
-                </span>
-              </div>
-            )}
-          </div>
+          )}
+
+          {profileData.founder && (
+            <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+              <p className="text-sm font-semibold text-text-primary">{profileData.founder}</p>
+              {profileData.background && <p className="mt-1 text-sm text-text-secondary">{profileData.background}</p>}
+            </div>
+          )}
+
+          {hasExistingProfile && (
+            <div className="rounded-2xl border border-brand-primary/25 bg-brand-primary/10 p-3 text-xs uppercase tracking-[0.3em] text-brand-primary">
+              Profile cached. Update anything or tap Next.
+            </div>
+          )}
+
+          {messages.map((msg) => (
+            <MessageBubble key={msg.id} message={msg} />
+          ))}
+
+          <div ref={bottomRef} />
         </div>
       </div>
 
-      {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-24 min-h-0">
-        {profileData.founder && (
-          <div className="p-4 rounded-xl border border-white/10 bg-white/5 text-sm">
-            <p className="text-base font-semibold text-white">{profileData.founder}</p>
-            {profileData.background && (
-              <p className="text-white/70 mt-2 text-sm leading-relaxed">
-                {profileData.background}
-              </p>
-            )}
-            {(profileData.stage || profileData.goals) && (
-              <div className="mt-3 flex flex-wrap gap-2 text-[11px] uppercase tracking-widest text-white/60">
-                {profileData.stage && <span>Stage: {profileData.stage}</span>}
-                {profileData.goals && <span>Goals: {profileData.goals}</span>}
-              </div>
-            )}
-          </div>
-        )}
-        {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} showDebug={showDebug} />
-        ))}
-        
-        {/* Status Messages */}
-        {hasExistingProfile && (
-          <div className="mt-4 p-4 bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-400/40 rounded-xl flex flex-col gap-3 shadow-lg">
-            <div className="flex items-start gap-3">
-              <span className="text-2xl">👋</span>
-              <div className="flex-1">
-                <p className="text-base font-semibold text-blue-200">
-                  Welcome back, {profileData.founder || "Founder"}!
-                </p>
-                <p className="text-sm text-blue-300/90 mt-1 leading-relaxed">
-                  Your profile is ready to go.
-                </p>
-              </div>
-            </div>
-            
-            {profileData.background && (
-              <div className="bg-black/20 rounded-lg p-3 border border-blue-500/20">
-                <p className="text-xs uppercase tracking-wider text-blue-400/70 mb-1">Your Bio</p>
-                <p className="text-sm text-blue-100/90 leading-relaxed">
-                  {profileData.background}
-                </p>
-              </div>
-            )}
-            
-            <div className="flex items-center justify-between gap-3 pt-2">
-              <p className="text-xs text-blue-300/70">
-                Want to update? Just type your changes below.
-              </p>
-              {showNextButton && (
-                <button
-                  onClick={onComplete}
-                  className="text-sm font-bold px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-400 transition-all hover:scale-105 active:scale-95 shadow-md"
-                >
-                  Continue →
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-        
-        {!hasExistingProfile && isProfileComplete && (
-          <div className={`mt-4 p-3 border rounded-lg ${
-            profileDepth === 'high' 
-              ? 'bg-green-500/10 border-green-500/30' 
-              : 'bg-green-500/10 border-green-500/30'
-          }`}>
-            <p className={`text-sm ${
-              profileDepth === 'high' ? 'text-green-300' : 'text-green-300'
-            }`}>
-              {profileDepth === 'high' 
-                ? "✅ Great profile! The AI has what it needs." 
-                : "✅ Fast-Tracked! We have enough to start."}
-            </p>
-          </div>
-        )}
-        
-        <div ref={bottomRef} />
-      </div>
-
-      {/* Input Area */}
-      <div className="p-4 bg-black/80 backdrop-blur-md border-t border-white/10 relative z-10">
-          {/* Status/Next Area */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex flex-col justify-center">
-            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold">
-              <span className={`w-1.5 h-1.5 rounded-full ${isStreaming ? "bg-yellow-300 animate-ping" : (showNextButton ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "bg-gray-500")}`} />
-              {isStreaming ? "COOKING 🍳..." : (profileData.ready ? "READY ✨" : (showNextButton ? (isProfileFlow ? "IDENTITY LOCKED 🔒" : "STEP COMPLETE ✅") : (isProfileFlow ? (profileData.founder ? "SCANNING COMPLETE 📡" : "SCANNING... 📡") : "WAITING...")))}
-            </div>
-            {!showNextButton && !isStreaming && isProfileFlow && (
-              <span className="text-[10px] text-yellow-500/80 mt-1 animate-pulse">
-                {profileData.founder ? "* Reviewing profile..." : "* Need name & background"}
-              </span>
-            )}
-          </div>
-
+      <div className="border-t border-white/10 bg-bg-surface px-4 py-3 space-y-3">
+        <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.3em] text-text-muted">
+          <span>{statusLabel}</span>
           <button
             onClick={onComplete}
             disabled={!showNextButton}
-            className={`flex items-center gap-2 px-5 py-2 rounded-full text-xs font-black tracking-wide transition-all duration-300 ${
-              showNextButton 
-                ? "bg-gradient-to-r from-green-400 to-emerald-600 text-black shadow-[0_0_20px_rgba(52,211,153,0.4)] hover:shadow-[0_0_30px_rgba(52,211,153,0.6)] hover:scale-105 active:scale-95 cursor-pointer border-0" 
-                : "bg-white/5 text-gray-600 border border-white/10 cursor-not-allowed opacity-50 grayscale"
+            className={`rounded-full px-4 py-2 text-[10px] font-semibold tracking-[0.3em] transition ${
+              showNextButton
+                ? "bg-brand-primary text-text-inverse shadow hover:bg-brand-primary-soft"
+                : "bg-white/5 text-text-muted cursor-not-allowed"
             }`}
           >
-            NEXT STEP →
+            Next
           </button>
         </div>
-
-        {/* Input Box */}
-        <div className="flex flex-col gap-2 group/input">
-          <div className="flex items-end gap-2 bg-black/40 rounded-xl p-2 border border-white/10 focus-within:border-yellow-400/50 focus-within:bg-white/5 transition-all duration-300 focus-within:shadow-[0_0_20px_rgba(250,204,21,0.1)]">
-            
-            {/* File Upload Button */}
-            <label className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-white/10 cursor-pointer transition-colors group shrink-0" title="Upload PDF">
-              <input
-                type="file"
-                accept=".pdf"
-                onChange={handleFileUpload}
-                disabled={uploadingFile}
-                className="hidden"
-              />
-              {uploadingFile ? (
-                <div className="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <svg className="w-5 h-5 text-gray-400 group-hover:text-yellow-400 transition-colors transform group-hover:rotate-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                </svg>
-              )}
-            </label>
-
-            {/* Text Input */}
-            <textarea
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              placeholder={placeholder}
-              rows={1}
-              className="flex-1 bg-transparent text-white placeholder-gray-500 outline-none min-w-0 py-2.5 text-base resize-none max-h-32 overflow-y-auto font-medium"
-              style={{ WebkitTextFillColor: "#fff" }}
-              onInput={(e) => {
-                const target = e.target as HTMLTextAreaElement;
-                target.style.height = 'auto';
-                target.style.height = Math.min(target.scrollHeight, 128) + 'px';
-              }}
-            />
-
-            {/* Send Button */}
-            <button
-              onClick={handleSend}
-              disabled={!draft.trim()}
-              className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 shrink-0 ${
-                draft.trim() 
-                  ? "bg-yellow-400 text-black hover:bg-yellow-300 hover:scale-110 hover:rotate-3 shadow-lg shadow-yellow-400/20" 
-                  : "bg-white/5 text-gray-600 cursor-not-allowed"
-              }`}
-            >
-              <svg className="w-4 h-4 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-              </svg>
-            </button>
-          </div>
-          
-          <div className="flex items-center justify-between px-1">
-            <span className="text-[10px] text-gray-500 font-mono">
-              💡 Upload resume/deck
-            </span>
-            <span className="text-[10px] text-gray-600 font-mono">
-              ⏎ to send
-            </span>
-          </div>
+        <div className="flex items-end gap-2 rounded-2xl border border-white/10 bg-black/30 px-3 py-2">
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            rows={1}
+            className="flex-1 resize-none bg-transparent text-sm text-text-primary placeholder-text-muted outline-none"
+            onInput={(e) => {
+              const target = e.target as HTMLTextAreaElement;
+              target.style.height = "auto";
+              target.style.height = Math.min(target.scrollHeight, 120) + "px";
+            }}
+          />
+          <button
+            onClick={handleSend}
+            disabled={!draft.trim()}
+            className={`h-10 w-10 rounded-full text-sm font-semibold transition ${
+              draft.trim()
+                ? "bg-brand-primary text-text-inverse hover:bg-brand-primary-soft"
+                : "bg-white/5 text-text-muted cursor-not-allowed"
+            }`}
+          >
+            Send
+          </button>
+        </div>
+        <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.3em] text-text-muted">
+          <label className="cursor-pointer hover:text-text-primary">
+            {uploadingFile ? "Uploading…" : "Attach PDF"}
+            <input type="file" accept=".pdf" onChange={handleFileUpload} disabled={uploadingFile} className="hidden" />
+          </label>
+          <span>Enter sends</span>
         </div>
       </div>
     </div>

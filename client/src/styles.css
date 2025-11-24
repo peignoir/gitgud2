@@ -4,33 +4,33 @@
 
 @layer base {
   :root {
-    /* Default to dark theme variables per spec */
-    --bg-body: #050816;
-    --bg-surface: #0B1020;
-    --bg-surface-soft: #111827;
-    --border-subtle: #1F2937;
-    --border-strong: #374151;
-
-    --brand-primary: #22C55E;
-    --brand-primary-soft: #16A34A;
-    --accent-blue: #38BDF8;
-    --accent-purple: #A855F7;
-    --accent-yellow: #FACC15;
-
-    --text-primary: #E5E7EB;
-    --text-secondary: #9CA3AF;
-    --text-muted: #6B7280;
-    --text-inverse: #020617;
-
-    --status-success: #22C55E;
-    --status-warning: #F59E0B;
-    --status-danger: #EF4444;
-    --status-info: #38BDF8;
-
     color-scheme: dark;
+
+    --bg-body: #050912;
+    --bg-surface: #0b101a;
+    --bg-surface-soft: #11182a;
+    --border-subtle: #1f2635;
+    --border-strong: #2d3446;
+
+    --brand-primary: #f5d580;
+    --brand-primary-soft: #ceb06d;
+    --accent-blue: #58c3f8;
+    --accent-purple: #b497ff;
+    --accent-yellow: #ffd479;
+
+    --text-primary: #f4f3ef;
+    --text-secondary: #c5c4bf;
+    --text-muted: #8f8e88;
+    --text-inverse: #05070d;
+
+    --status-success: #4ade80;
+    --status-warning: #facc15;
+    --status-danger: #f87171;
+    --status-info: #38bdf8;
   }
 
-  html, body {
+  html,
+  body {
     min-height: 100%;
     overscroll-behavior-y: none;
     -webkit-text-size-adjust: 100%;
@@ -39,7 +39,8 @@
   body {
     background-color: var(--bg-body);
     color: var(--text-primary);
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+    font-family: "SF Pro Display", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    letter-spacing: -0.01em;
     @apply min-h-dvh antialiased;
   }
 
