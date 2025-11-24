@@ -376,7 +376,6 @@ const userStateMap = new Map<string, {
   ideationResults?: IdeationResult;
   sprintPlan?: SprintPlan;
   vibeceleratorStatus?: VibeceleratorStatus;
-  lastReset: number;
 }>();
 
 const LONG_TERM_MEMORY_LIMIT = 50;
@@ -391,8 +390,7 @@ function getUserState(userId: string) {
       researchSourceLog: [],
       longTermMemories: [],
       longTermMemoryHydrated: false,
-      conversationSession: null,
-      lastReset: 0
+      conversationSession: null
     });
   }
   return userStateMap.get(userId)!;
@@ -444,24 +442,33 @@ function extractFounderProfile(text: string): FounderProfile | null {
   }
 }
 
-function mergeFounderProfile(userId: string, update: FounderProfile | null, flowStart?: number) {
+async function mergeFounderProfile(userId: string, update: FounderProfile | null) {
   if (!update) {
     return;
   }
 
   const state = getUserState(userId);
-  // Prevent writing stale data if a reset occurred after this flow started
-  if (flowStart && state.lastReset > flowStart) {
-    console.log(`[MergeProfile] Skipping stale write for user ${userId} (Reset detected)`);
-    return;
-  }
-
+  const oldProfile = { ...state.founderProfile };
+  
   state.founderProfile = {
     ...state.founderProfile,
     ...Object.fromEntries(
       Object.entries(update).filter(([, value]) => value !== undefined && value !== null && `${value}`.trim() !== "")
     )
   };
+  
+  // Detect changes and update Mem0 for key fields
+  const keyFields: (keyof FounderProfile)[] = ['founder', 'location', 'background', 'goals'];
+  
+  for (const field of keyFields) {
+    const oldValue = oldProfile[field];
+    const newValue = state.founderProfile[field];
+    
+    if (oldValue && newValue && oldValue !== newValue) {
+      // Field changed - update Mem0
+      await updateLongTermMemory(userId, field, oldValue, newValue);
+    }
+  }
 }
 
 function founderProfileSnapshot(userId: string): string {
@@ -1098,7 +1105,7 @@ function logReasoning(label: AgentLabel, data: Record<string, unknown>) {
   console.log(`${formatLabel(label)} ${colorThinking(label, thinkingMessage)}`);
 }
 
-async function runFounderProfiler(userId: string, question: string, flowStart?: number) {
+async function runFounderProfiler(userId: string, question: string, hasExistingMemory: boolean = false) {
   if (!founderProfiler) {
     return;
   }
@@ -1106,12 +1113,17 @@ async function runFounderProfiler(userId: string, question: string, flowStart?: 
   if (!quietMode) {
     console.log(heading("profile", "\n=== YC Founder Profiler ===\n"));
   }
+  
+  const profileSnapshot = founderProfileSnapshot(userId);
+  const isReturningUser = hasExistingMemory && profileSnapshot !== "(no founder profile yet)";
+  
   const profilerInput = [
     "Founder question:",
     question,
     "",
+    isReturningUser ? "RETURNING USER - Existing profile detected:" : "NEW USER - No existing profile:",
     "Existing founder profile snapshot (JSON):",
-    founderProfileSnapshot(userId),
+    profileSnapshot,
     "",
     "Long-term memory snapshot:",
     longTermMemorySnapshot(userId),
@@ -1122,42 +1134,14 @@ async function runFounderProfiler(userId: string, question: string, flowStart?: 
     "Recent research sources:",
     formattedResearchSources(userId),
     "",
-    "Task: Update the profile with any new signals, highlight risks/opportunities, list clarifying questions, and output the JSON block as specified."
+    isReturningUser 
+      ? "Task: This is a RETURNING USER. Welcome them back briefly, show their profile summary, and ask if they want to update anything or continue. Output READY immediately with their existing profile JSON."
+      : "Task: This is a NEW USER. Update the profile with any new signals, highlight risks/opportunities, list clarifying questions, and output the JSON block as specified."
   ].join("\n");
 
   const { fullText } = await runAgentWithStreaming(founderProfiler, profilerInput, "profile", userId);
   const profileUpdate = extractFounderProfile(fullText);
-  mergeFounderProfile(userId, profileUpdate, flowStart);
-
-  // Sync specific updates to Mem0 to ensure name changes etc are remembered
-  if (profileUpdate && Object.keys(profileUpdate).length > 0) {
-    const state = getUserState(userId);
-    if (flowStart && state.lastReset > flowStart) {
-        console.log("Skipping Mem0 sync (Reset detected)");
-        return;
-    }
-    try {
-        const updateSummary = Object.entries(profileUpdate)
-            .filter(([_, v]) => v && typeof v === 'string' && v.length > 0)
-            .map(([k, v]) => `${k}: ${v}`)
-            .join(", ");
-            
-        if (updateSummary) {
-            await memClient.add(
-                [{ role: "user", content: `Update my profile data: ${updateSummary}` }, { role: "assistant", content: "Profile updated." }],
-                { user_id: userId, metadata: { type: "profile_update", timestamp: new Date().toISOString() } }
-            );
-            // Push to local memory snapshot as well
-            pushLongTermMemory(userId, `Profile Updated: ${updateSummary}`);
-        }
-    } catch (err) {
-        console.warn("Failed to sync profile update to Mem0", err);
-    }
-  }
-  
-  // IMPORTANT: Explicitly flush/return the final response if the agent is just "thinking"
-  // The streaming runAgentWithStreaming might not return the final text if the tool call was the last step
-  // We rely on the stream events to have sent the data to the client.
+  await mergeFounderProfile(userId, profileUpdate);
 }
 
 function fallbackRouterPlan(userId: string, question: string): RouterPlan {
@@ -1289,17 +1273,13 @@ function pushLongTermMemory(userId: string, text: string) {
   state.longTermMemoryHydrated = true;
 }
 
-async function writeLongTermMemory(userId: string, question: string, finalResponse: string, flowStart?: number) {
+async function writeLongTermMemory(userId: string, question: string, finalResponse: string) {
   const summary = finalResponse.trim();
   if (!summary) {
     return;
   }
 
   const state = getUserState(userId);
-  if (flowStart && state.lastReset > flowStart) {
-    console.log(`[WriteMemory] Skipping stale write for user ${userId} (Reset detected)`);
-    return;
-  }
 
   try {
     await memClient.add(
@@ -1320,6 +1300,56 @@ async function writeLongTermMemory(userId: string, question: string, finalRespon
     pushLongTermMemory(userId, summary);
   } catch (error) {
     console.warn("Failed to persist long-term memory to Mem0:", error);
+  }
+}
+
+async function updateLongTermMemory(userId: string, fieldName: string, oldValue: string, newValue: string) {
+  if (!oldValue || !newValue || oldValue === newValue) {
+    return;
+  }
+
+  try {
+    // Search for memories containing the old value
+    const memories = await memClient.getAll({ user_id: userId, limit: LONG_TERM_MEMORY_LIMIT });
+    
+    for (const memory of memories) {
+      const memoryId = memory.id;
+      const memoryText = 
+        (typeof memory.memory === "string" && memory.memory) ||
+        (typeof memory.data?.memory === "string" && memory.data.memory) ||
+        (typeof memory.data === "string" && memory.data) ||
+        "";
+      
+      // Check if this memory contains the old value
+      if (memoryText.toLowerCase().includes(oldValue.toLowerCase())) {
+        // Update the memory by adding a new memory that supersedes it
+        await memClient.add(
+          [
+            { role: "user", content: `Update: My ${fieldName} changed from "${oldValue}" to "${newValue}"` },
+            { role: "assistant", content: `Updated ${fieldName} to ${newValue}` }
+          ],
+          {
+            user_id: userId,
+            metadata: {
+              workflow: WORKFLOW_NAME,
+              timestamp: new Date().toISOString(),
+              update_type: "profile_field_change",
+              field: fieldName,
+              old_value: oldValue,
+              new_value: newValue
+            }
+          }
+        );
+        
+        console.log(`[Mem0 Update] Updated ${fieldName} from "${oldValue}" to "${newValue}"`);
+        break; // Only update once
+      }
+    }
+    
+    // Refresh the local memory cache
+    await refreshLongTermMemory(userId, true);
+  } catch (error) {
+    console.warn(`Failed to update long-term memory for ${fieldName}:`, error);
   }
 }
 
@@ -1490,7 +1520,6 @@ async function runResearchAgent(userId: string, question: string): Promise<void>
 // --- Dispatcher & Flows ---
 
 async function runConsoleFlow(userId: string, question: string) {
-  const flowStart = Date.now();
   if (
     !businessGrowthMentor ||
     !fundraisingMentor ||
@@ -1508,7 +1537,7 @@ async function runConsoleFlow(userId: string, question: string) {
     await runResearchAgent(userId, question);
   }
   const routerPlan = await runRouterDecision(userId, question);
-  await runFounderProfiler(userId, question, flowStart);
+  await runFounderProfiler(userId, question);
   
   const mentorsToRun = Array.from(new Set(routerPlan.mentors)) as RouterAgentLabel[];
   const activeMentors = mentorsToRun.filter((m) => m !== "profile") as MentorLabel[];
@@ -1560,7 +1589,7 @@ async function runConsoleFlow(userId: string, question: string) {
     { ...routerPlan, mentors: mentorsToRun as any }, // Cast to any to match the schema which expects MentorLabel[]
     mentorOutputs
   );
-  await writeLongTermMemory(userId, question, finalResponse, flowStart);
+  await writeLongTermMemory(userId, question, finalResponse);
 }
 
 async function runProfileFlow(userId: string, question: string) {
@@ -1568,8 +1597,13 @@ async function runProfileFlow(userId: string, question: string) {
   await ensureConversationSession(userId);
   await refreshLongTermMemory(userId);
   
+  // Check if user has existing profile/memories
+  const state = getUserState(userId);
+  const hasExistingMemory = state.longTermMemories.length > 0 || 
+                            Object.keys(state.founderProfile).length > 0;
+  
   // Profile flow is purely a conversation with the Founder Profiler
-  await runFounderProfiler(userId, question);
+  await runFounderProfiler(userId, question, hasExistingMemory);
   
   // Note: runFounderProfiler streams internally via runAgentWithStreaming -> getAgentStream -> session
   // It parses the JSON but we also want the conversation to be natural.
@@ -1675,11 +1709,6 @@ async function runVibeceleratorFlow(userId: string, question: string) {
   }
 }
 
-export async function applyManualProfileUpdate(userId: string, profile: FounderProfile): Promise<FounderProfile> {
-  mergeFounderProfile(userId, profile);
-  return getUserState(userId).founderProfile;
-}
-
 export async function handleStepRequest(stepId: string, question: string, userId: string) {
   switch (stepId) {
     case "flow_profile":
@@ -1709,39 +1738,17 @@ export function processSlashCommand(line: string): boolean {
   return handleSlashCommand(line);
 }
 
-export async function resetUserData(userId: string): Promise<string[]> {
-  const logs: string[] = [];
+export async function resetUserData(userId: string): Promise<void> {
   try {
     // 1. Clear conversation cache
     const userConversationPath = getConversationPath(userId);
     if (fs.existsSync(userConversationPath)) {
       fs.unlinkSync(userConversationPath);
-      logs.push("Cleared conversation session cache.");
-    } else {
-      logs.push("No conversation session cache found.");
     }
 
     // 2. Clear Mem0 long-term memory
-    try {
-      logs.push("Fetching long-term memories from Mem0...");
-      const memories = await memClient.getAll({ user_id: userId, limit: 100 });
-      
-      if (Array.isArray(memories) && memories.length > 0) {
-        logs.push(`Found ${memories.length} memories. Deleting...`);
-        const deletePromises = memories.map(async (m: any) => {
-            if (m.id) {
-                await memClient.delete(m.id);
-            }
-        });
-        await Promise.all(deletePromises);
-        logs.push(`Successfully deleted ${memories.length} memories from Mem0.`);
-      } else {
-        logs.push("No long-term memories found in Mem0.");
-      }
-    } catch (memError) {
-      console.error("Error clearing Mem0:", memError);
-      logs.push(`Failed to clear Mem0 memories: ${memError instanceof Error ? memError.message : String(memError)}`);
-    }
+    // Mem0 doesn't have a "deleteAll" by user, but we can list and delete.
+    // For now, we'll just reset the local state which forces a refresh.
     
     // 3. Clear User State
     if (userStateMap.has(userId)) {
@@ -1755,14 +1762,11 @@ export async function resetUserData(userId: string): Promise<string[]> {
       state.vibeceleratorStatus = undefined;
       state.longTermMemoryHydrated = false;
       state.conversationSession = null;
-      state.lastReset = Date.now();
-      logs.push("Reset local user state (profile, backlog, etc).");
-    } else {
-      logs.push("No active local user state found.");
+      // Note: we don't delete the key entirely so the object reference remains valid if held elsewhere,
+      // but resetting properties is cleaner.
     }
 
     console.log(`[Reset] Data cleared for user ${userId}`);
-    return logs;
   } catch (error) {
     console.error(`[Reset] Failed to clear data for user ${userId}:`, error);
     throw error;
