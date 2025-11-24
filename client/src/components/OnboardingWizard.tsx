@@ -61,18 +61,28 @@ export const OnboardingWizard = () => {
   const handleReset = async () => {
     if (!userId) return;
     if (confirm("Are you sure? This will wipe all your data.")) {
-    try {
+      try {
         const API_BASE_URL = import.meta.env.VITE_API_URL || "";
-        await fetch(`${API_BASE_URL}/api/reset`, {
-        method: "POST",
-        headers: { "x-user-id": userId }
-      });
-      localStorage.removeItem("gitgud_userid");
+        const response = await fetch(`${API_BASE_URL}/api/reset`, {
+          method: "POST",
+          headers: { "x-user-id": userId }
+        });
+        
+        if (!response.ok) {
+          throw new Error("Reset request failed");
+        }
+        
+        // Clear all localStorage for this user
+        localStorage.removeItem("gitgud_userid");
+        localStorage.removeItem(`gitgud_profile_${userId}`);
+        
         setUserId("");
         setStep("login");
+        
+        alert("Reset successful! You can now start fresh.");
       } catch (e) {
         console.error("Reset failed", e);
-        alert("Reset failed");
+        alert("Reset failed: " + (e instanceof Error ? e.message : "Unknown error"));
       }
     }
   };

@@ -33,6 +33,7 @@ const summarySchema = z.object({
 const founderProfileSchema = z
   .object({
     founder: z.string().optional(),
+    location: z.string().optional(),
     background: z.string().optional(),
     stage: z.string().optional(),
     motivations: z.string().optional(),
@@ -1747,8 +1748,25 @@ export async function resetUserData(userId: string): Promise<void> {
     }
 
     // 2. Clear Mem0 long-term memory
-    // Mem0 doesn't have a "deleteAll" by user, but we can list and delete.
-    // For now, we'll just reset the local state which forces a refresh.
+    // Try to delete all memories for this user
+    try {
+      const memories = await memClient.getAll({ user_id: userId, limit: 100 });
+      console.log(`[Reset] Found ${memories.length} memories to delete for user ${userId}`);
+      
+      for (const memory of memories) {
+        if (memory.id) {
+          try {
+            await memClient.delete(memory.id);
+            console.log(`[Reset] Deleted memory ${memory.id}`);
+          } catch (deleteError) {
+            console.warn(`[Reset] Failed to delete memory ${memory.id}:`, deleteError);
+          }
+        }
+      }
+    } catch (memError) {
+      console.warn(`[Reset] Failed to clear Mem0 memories (may not be supported):`, memError);
+      // Continue with reset even if Mem0 deletion fails
+    }
     
     // 3. Clear User State
     if (userStateMap.has(userId)) {

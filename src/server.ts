@@ -237,8 +237,8 @@ app.post("/api/reset", async (req, res) => {
     return;
   }
   try {
-    const logs = await resetUserData(userId);
-    res.json({ success: true, message: `Reset data for user ${userId}`, logs });
+    await resetUserData(userId);
+    res.json({ success: true, message: `Reset data for user ${userId}` });
   } catch (error) {
     console.error("Reset failed:", error);
     res.status(500).json({ error: "Failed to reset user data." });

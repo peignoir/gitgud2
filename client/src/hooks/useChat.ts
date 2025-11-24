@@ -135,6 +135,5 @@ export function useChat(userId?: string, stepId?: string) {
     setIsStreaming(false);
   }, []);
 
-  return { messages, isStreaming, sendMessage, cancel };
+  return { messages, setMessages, isStreaming, sendMessage, cancel };
 }
-
