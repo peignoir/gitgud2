@@ -1154,6 +1154,10 @@ async function runFounderProfiler(userId: string, question: string, flowStart?: 
         console.warn("Failed to sync profile update to Mem0", err);
     }
   }
+  
+  // IMPORTANT: Explicitly flush/return the final response if the agent is just "thinking"
+  // The streaming runAgentWithStreaming might not return the final text if the tool call was the last step
+  // We rely on the stream events to have sent the data to the client.
 }
 
 function fallbackRouterPlan(userId: string, question: string): RouterPlan {
