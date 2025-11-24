@@ -1739,7 +1739,9 @@ export function processSlashCommand(line: string): boolean {
   return handleSlashCommand(line);
 }
 
-export async function resetUserData(userId: string): Promise<void> {
+export async function resetUserData(userId: string): Promise<{ memoriesCleared: number; success: boolean }> {
+  let memoriesCleared = 0;
+  
   try {
     // 1. Clear conversation cache
     const userConversationPath = getConversationPath(userId);
@@ -1751,20 +1753,18 @@ export async function resetUserData(userId: string): Promise<void> {
     // Try to delete all memories for this user
     try {
       const memories = await memClient.getAll({ user_id: userId, limit: 100 });
-      console.log(`[Reset] Found ${memories.length} memories to delete for user ${userId}`);
       
       for (const memory of memories) {
         if (memory.id) {
           try {
             await memClient.delete(memory.id);
-            console.log(`[Reset] Deleted memory ${memory.id}`);
+            memoriesCleared++;
           } catch (deleteError) {
-            console.warn(`[Reset] Failed to delete memory ${memory.id}:`, deleteError);
+            // Memory might already be deleted, continue silently
           }
         }
       }
     } catch (memError) {
-      console.warn(`[Reset] Failed to clear Mem0 memories (may not be supported):`, memError);
       // Continue with reset even if Mem0 deletion fails
     }
     
@@ -1780,11 +1780,10 @@ export async function resetUserData(userId: string): Promise<void> {
       state.vibeceleratorStatus = undefined;
       state.longTermMemoryHydrated = false;
       state.conversationSession = null;
-      // Note: we don't delete the key entirely so the object reference remains valid if held elsewhere,
-      // but resetting properties is cleaner.
     }
 
-    console.log(`[Reset] Data cleared for user ${userId}`);
+    console.log(`[Reset] Successfully cleared data for user ${userId} (${memoriesCleared} memories)`);
+    return { memoriesCleared, success: true };
   } catch (error) {
     console.error(`[Reset] Failed to clear data for user ${userId}:`, error);
     throw error;

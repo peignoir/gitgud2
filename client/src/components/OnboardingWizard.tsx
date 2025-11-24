@@ -72,17 +72,21 @@ export const OnboardingWizard = () => {
           throw new Error("Reset request failed");
         }
         
+        const data = await response.json();
+        
         // Clear all localStorage for this user
         localStorage.removeItem("gitgud_userid");
         localStorage.removeItem(`gitgud_profile_${userId}`);
         
+        // Show success message
+        alert(`✅ ${data.message || "Reset complete!"}`);
+        
+        // Redirect to login
         setUserId("");
         setStep("login");
-        
-        alert("Reset successful! You can now start fresh.");
       } catch (e) {
         console.error("Reset failed", e);
-        alert("Reset failed: " + (e instanceof Error ? e.message : "Unknown error"));
+        alert("❌ Reset failed: " + (e instanceof Error ? e.message : "Unknown error"));
       }
     }
   };

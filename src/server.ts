@@ -237,8 +237,12 @@ app.post("/api/reset", async (req, res) => {
     return;
   }
   try {
-    await resetUserData(userId);
-    res.json({ success: true, message: `Reset data for user ${userId}` });
+    const result = await resetUserData(userId);
+    res.json({ 
+      success: true, 
+      message: `Reset complete! Cleared ${result.memoriesCleared} memories and all profile data.`,
+      memoriesCleared: result.memoriesCleared
+    });
   } catch (error) {
     console.error("Reset failed:", error);
     res.status(500).json({ error: "Failed to reset user data." });

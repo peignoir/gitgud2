@@ -265,13 +265,17 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
     }
   }, [messages]);
 
-  // Initial greeting if empty
+  // Initial greeting if empty - but SKIP for returning users
   useEffect(() => {
     if (messages.length === 0 && !seedRef.current) {
       seedRef.current = true;
-      sendMessage(overrideSeed || DEFAULT_SEED);
+      // ONLY send seed message if this is NOT a returning user with existing profile
+      if (!hasExistingProfile) {
+        sendMessage(overrideSeed || DEFAULT_SEED);
+      }
+      // For returning users: skip AI entirely, just show welcome card
     }
-  }, [messages.length, sendMessage, overrideSeed]);
+  }, [messages.length, sendMessage, overrideSeed, hasExistingProfile]);
 
   const handleSend = async () => {
     if (!draft.trim()) return;
