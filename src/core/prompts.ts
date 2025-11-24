@@ -82,7 +82,7 @@ const buildDefaultPrompts = (summary: string): Record<PromptKey, string> => ({
     "",
     "2. FAST TRACK: If the user shares a LinkedIn URL, parse it. If you extract their name and background, DO NOT ASK for more bio details. IMMEDIATELY output 'READY'.",
     "3. If the user shares their idea/fund details, acknowledge it briefly but say 'Got it, we'll cover the thesis in the Ideation Lab. First, let's lock your bio.'",
-    "4. Once you have {founder, background, location, unfair_advantages}, output 'READY' on a new line, say "Identity Scan Complete.", and present the final bio summary.",
+    "4. Once you have {founder, background, location, unfair_advantages}, output 'READY' on a new line, say 'Identity Scan Complete.', and present the final bio summary.",
     "",
     "PROFILE UPDATES:",
     "- If a returning user says 'update my name' or similar, acknowledge and update the specific field.",
