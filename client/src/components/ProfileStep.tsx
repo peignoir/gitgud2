@@ -422,7 +422,10 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
   
   // Alias for backward compatibility in JSX
   const isProfileComplete = hasExistingProfile || profileData.ready;
-  const showNextButton = isProfileComplete || userMessageCount >= 5;
+  
+  // Safely calculate showNextButton
+  const messageCount = Array.isArray(messages) ? messages.filter(m => m.role === "user").length : 0;
+  const showNextButton = isProfileComplete || messageCount >= 5;
 
   return (
     <div className="relative flex flex-col h-full bg-bg-surface">
