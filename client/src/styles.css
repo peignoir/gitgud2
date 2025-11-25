@@ -6,27 +6,59 @@
   :root {
     color-scheme: dark;
 
-    --bg-body: #050912;
-    --bg-surface: #0b101a;
-    --bg-surface-soft: #11182a;
-    --border-subtle: #1f2635;
-    --border-strong: #2d3446;
-
-    --brand-primary: #f5d580;
-    --brand-primary-soft: #ceb06d;
-    --accent-blue: #58c3f8;
-    --accent-purple: #b497ff;
-    --accent-yellow: #ffd479;
-
-    --text-primary: #f4f3ef;
-    --text-secondary: #c5c4bf;
-    --text-muted: #8f8e88;
-    --text-inverse: #05070d;
-
-    --status-success: #4ade80;
-    --status-warning: #facc15;
-    --status-danger: #f87171;
-    --status-info: #38bdf8;
+    /* NC/ACC 2026 Design System */
+    
+    /* Backgrounds */
+    --color-bg: #050711;
+    --color-bg-elevated: rgba(15, 18, 35, 0.85);
+    --bg-body: #050711;
+    --bg-surface: rgba(15, 18, 35, 0.85);
+    --bg-surface-soft: rgba(20, 24, 45, 0.9);
+    
+    /* Accent */
+    --color-accent: #6F9AFF;
+    --color-accent-soft: rgba(111, 154, 255, 0.18);
+    --color-accent-2: #9D7BFF;
+    --brand-primary: #6F9AFF;
+    --brand-primary-soft: rgba(111, 154, 255, 0.18);
+    --accent-blue: #6F9AFF;
+    --accent-purple: #9D7BFF;
+    --accent-yellow: #FFD479;
+    
+    /* Text */
+    --color-text: #F8FAFF;
+    --color-text-soft: #A3A8C2;
+    --color-text-muted: #70758C;
+    --text-primary: #F8FAFF;
+    --text-secondary: #A3A8C2;
+    --text-muted: #70758C;
+    --text-inverse: #050711;
+    --color-danger: #FF4B6E;
+    
+    /* Borders */
+    --color-border-subtle: rgba(255, 255, 255, 0.06);
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --border-strong: rgba(255, 255, 255, 0.12);
+    
+    /* Status */
+    --status-success: #4ADE80;
+    --status-warning: #FACC15;
+    --status-danger: #FF4B6E;
+    --status-info: #6F9AFF;
+    
+    /* Spacing */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 12px;
+    --space-lg: 20px;
+    --space-xl: 28px;
+    
+    /* Radii */
+    --radius-md: 14px;
+    --radius-lg: 22px;
+    
+    /* Touch targets */
+    --tap-min: 44px;
   }
 
   html,
@@ -34,23 +66,18 @@
     min-height: 100%;
     overscroll-behavior-y: none;
     -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
-    background-color: var(--bg-body);
-    color: var(--text-primary);
-    font-family: "SF Pro Display", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, sans-serif;
     letter-spacing: -0.01em;
     @apply min-h-dvh antialiased;
   }
 
-  /* Login mode override if needed, but we prefer dark for main app */
-  body.login-mode,
-  html.login-mode {
-    color-scheme: light;
-    background-color: #ffffff !important;
-    color: #000000 !important;
-  }
+  /* Remove login-mode override - always dark */
 }
 
 @layer utilities {
@@ -61,22 +88,51 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+  
+  /* Glass effect */
+  .glass {
+    background: var(--color-bg-elevated);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  
+  /* Primary gradient button */
+  .btn-primary {
+    background: linear-gradient(135deg, #6F9AFF 0%, #9D7BFF 100%);
+    color: white;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    min-height: var(--tap-min);
+    padding: var(--space-md) var(--space-lg);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  
+  .btn-primary:active {
+    transform: scale(0.97);
+  }
+  
+  .btn-primary:hover {
+    box-shadow: 0 4px 20px rgba(111, 154, 255, 0.3);
+  }
+  
+  /* Subtle spring animation */
+  .spring {
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  
+  .spring:active {
+    transform: scale(0.95);
+  }
 }
 
+/* Hide scrollbars but keep functionality */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 0;
+  height: 0;
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+/* Selection color */
+::selection {
+  background: rgba(111, 154, 255, 0.3);
+  color: var(--color-text);
 }

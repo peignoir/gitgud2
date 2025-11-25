@@ -35,12 +35,20 @@ const founderProfileSchema = z
     founder: z.string().optional(),
     location: z.string().optional(),
     background: z.string().optional(),
+    experience_tier: z.enum(["first-time", "experienced", "serial"]).optional(),
+    funding_history: z.string().optional(),
+    exits: z.string().optional(),
+    academic: z.string().optional(),
+    social_capital: z.string().optional(),
     stage: z.string().optional(),
     motivations: z.string().optional(),
     strengths: z.string().optional(),
     gaps: z.string().optional(),
     working_style: z.string().optional(),
     goals: z.string().optional(),
+    loves: z.string().optional(),
+    hates: z.string().optional(),
+    unfair_advantages: z.string().optional(),
     notes: z.string().optional()
   })
   .partial();
@@ -60,6 +68,8 @@ const researchNotesSchema = z.object({
 const ideationResultSchema = z.object({
   top_ideas: z.array(z.string()).optional(),
   market_trend: z.string().optional(),
+  skills_identified: z.array(z.string()).optional(),
+  network_edges: z.array(z.string()).optional(),
   user_selected_idea: z.string().optional()
 });
 
@@ -1112,19 +1122,23 @@ async function runFounderProfiler(userId: string, question: string, hasExistingM
   }
 
   if (!quietMode) {
-    console.log(heading("profile", "\n=== YC Founder Profiler ===\n"));
+    console.log(heading("profile", "\n=== YC Founder Profiler (Deep Research Mode) ===\n"));
   }
   
   const profileSnapshot = founderProfileSnapshot(userId);
   const isReturningUser = hasExistingMemory && profileSnapshot !== "(no founder profile yet)";
+  const state = getUserState(userId);
+  const currentTier = state.founderProfile.experience_tier || "unknown";
   
   const profilerInput = [
-    "Founder question:",
+    "Founder input:",
     question,
     "",
     isReturningUser ? "RETURNING USER - Existing profile detected:" : "NEW USER - No existing profile:",
-    "Existing founder profile snapshot (JSON):",
+    "Current founder profile (JSON):",
     profileSnapshot,
+    "",
+    `Current experience tier: ${currentTier}`,
     "",
     "Long-term memory snapshot:",
     longTermMemorySnapshot(userId),
@@ -1135,9 +1149,18 @@ async function runFounderProfiler(userId: string, question: string, hasExistingM
     "Recent research sources:",
     formattedResearchSources(userId),
     "",
+    "IMPORTANT INSTRUCTIONS:",
+    "1. If the founder mentions ANY company, person, school, or shares a LinkedIn URL:",
+    "   - Use Tavily search with searchDepth: 'advanced' to research it deeply.",
+    "   - Look for funding history, exits, press coverage, academic background.",
+    "   - If you find additional entities (investors, acquirers), do a SECOND search on those.",
+    "2. Output status messages like '[Searching] Company X...' and '[Found] 3 articles...' so the user knows research is happening.",
+    "3. Classify the founder as first-time, experienced, or serial based on your research.",
+    "4. Adapt your tone based on their experience tier.",
+    "",
     isReturningUser 
-      ? "Task: This is a RETURNING USER. Welcome them back briefly, show their profile summary, and ask if they want to update anything or continue. Output READY immediately with their existing profile JSON."
-      : "Task: This is a NEW USER. Update the profile with any new signals, highlight risks/opportunities, list clarifying questions, and output the JSON block as specified."
+      ? "Task: RETURNING USER. Welcome them back, summarize their profile, ask if updates needed. Output READY with existing JSON."
+      : "Task: NEW USER. Research their background thoroughly (2-level deep search). Build a complete profile. Output the full JSON with all fields including experience_tier, funding_history, exits, academic, social_capital."
   ].join("\n");
 
   const { fullText } = await runAgentWithStreaming(founderProfiler, profilerInput, "profile", userId);
@@ -1628,14 +1651,48 @@ async function runIdeationFlow(userId: string, question: string) {
   await ensureConversationSession(userId);
   await refreshLongTermMemory(userId);
 
-  // 1. Research Context
-  // If question is short/generic, force a trend search
-  const effectiveQuestion = question.length < 10 ? "What are the latest startup trends in my sector?" : question;
-  await runResearchAgent(userId, effectiveQuestion);
+  const state = getUserState(userId);
+  const founderBackground = state.founderProfile.background || "";
+  const founderExits = state.founderProfile.exits || "";
+  const experienceTier = state.founderProfile.experience_tier || "unknown";
   
-  // 2. Ideation Mentor
-  announceSection("ideation", "YC Ideation Partner");
-  const ideationInput = buildBusinessInput(userId, question + "\n\nTask: Focus on idea generation. 1) Analyze market trends relevant to the founder's background. 2) Propose 4 unique, non-obvious startup ideas. 3) Allow the founder to critique them. 4) Keep response under 200 words.");
+  // Build context about what to AVOID (founder's past work)
+  const avoidContext = [
+    founderBackground,
+    founderExits,
+    state.founderIdeaBacklog.join(", ")
+  ].filter(Boolean).join(". ");
+  
+  // 1. Ideation Mentor (it will do its own trend research per the prompt)
+  announceSection("ideation", "YC Ideation Partner (Creative Mode)");
+  
+  const ideationInput = [
+    "Founder input:",
+    question,
+    "",
+    "Founder profile:",
+    founderProfileSnapshot(userId),
+    "",
+    `Experience tier: ${experienceTier}`,
+    "",
+    "CRITICAL - DO NOT SUGGEST IDEAS SIMILAR TO:",
+    avoidContext || "(No prior work detected)",
+    "",
+    "Founder's skills to leverage (from profile):",
+    state.founderProfile.unfair_advantages || state.founderProfile.background || "(Infer from profile)",
+    "",
+    "Founder's network edges (from profile):",
+    state.founderProfile.social_capital || "(Infer from profile)",
+    "",
+    "Long-term memory:",
+    longTermMemorySnapshot(userId),
+    "",
+    "TASK:",
+    "1. Use Tavily to search for '2025 emerging startup trends' and 'non-obvious startup opportunities 2025'.",
+    "2. Generate 4 ideas: 2 using skills transfer to NEW industries, 2 using network leverage.",
+    "3. Each idea must be DIFFERENT from the founder's past work.",
+    "4. Be specific: name the first customer, explain the timing."
+  ].join("\n");
   
   const { fullText } = await runAgentWithStreaming(ideationMentor, ideationInput, "ideation", userId);
   

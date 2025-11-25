@@ -1,13 +1,12 @@
 import type { ChatMessage } from "@/hooks/useChat";
-import type { CSSProperties } from "react";
 import { memo } from "react";
 
 /** Strip ANSI escape sequences so raw codes don't leak into the UI */
 const stripAnsi = (value: string) => value.replace(/\x1b\[[0-9;]*m/g, "");
 
-const agentStripeStyle: CSSProperties = {
-  backgroundImage:
-    "repeating-linear-gradient(135deg, rgba(255,255,255,0.05) 0, rgba(255,255,255,0.05) 12px, rgba(255,255,255,0.01) 12px, rgba(255,255,255,0.01) 24px)"
+/** Check if text contains research status messages */
+const isStatusMessage = (text: string) => {
+  return text.includes('[Searching]') || text.includes('[Found]') || text.includes('[Researching]');
 };
 
 type MessageBubbleProps = {
@@ -19,23 +18,78 @@ const MessageBubble = memo(({ message }: MessageBubbleProps) => {
   const raw = message.content ?? "";
   const body = stripAnsi(raw).trim();
   const displayText = body || (message.pending ? "…" : "");
+  const hasStatus = !isUser && isStatusMessage(body);
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
       <div
-        className={`max-w-[92%] rounded-2xl border px-4 py-3 text-sm leading-relaxed transition ${
-          isUser
-            ? "border-brand-primary/40 bg-brand-primary/10 text-text-primary"
-            : "border-white/15 bg-white/5 text-text-primary"
-        }`}
-        style={isUser ? undefined : agentStripeStyle}
+        className="max-w-[88%] rounded-[var(--radius-md)] px-[var(--space-lg)] py-[var(--space-md)] text-[15px] leading-relaxed transition-all"
+        style={{
+          backgroundColor: isUser 
+            ? 'var(--color-accent-soft)' 
+            : 'var(--color-bg-elevated)',
+          border: `1px solid ${isUser ? 'var(--color-accent)' : 'var(--color-border-subtle)'}`,
+          borderRadius: isUser 
+            ? 'var(--radius-md) var(--radius-md) 4px var(--radius-md)' 
+            : 'var(--radius-md) var(--radius-md) var(--radius-md) 4px'
+        }}
       >
-        <p className="text-[10px] uppercase tracking-[0.3em] text-text-muted">
+        {/* Label */}
+        <p 
+          className="text-[11px] uppercase tracking-[0.15em] font-medium mb-[var(--space-xs)]"
+          style={{ color: isUser ? 'var(--color-accent)' : 'var(--color-text-muted)' }}
+        >
           {isUser ? "You" : "Agent"}
         </p>
-        <p className={`mt-2 whitespace-pre-line ${message.pending ? "opacity-70" : ""}`}>
-          {displayText || " "}
-        </p>
+        
+        {/* Content */}
+        <div 
+          className={`whitespace-pre-line ${message.pending ? "opacity-60" : ""}`}
+          style={{ color: 'var(--color-text)' }}
+        >
+          {hasStatus ? (
+            // Render status messages with special styling
+            displayText.split('\n').map((line, i) => {
+              if (line.includes('[Searching]') || line.includes('[Researching]')) {
+                return (
+                  <p 
+                    key={i} 
+                    className="text-[13px] py-1"
+                    style={{ color: 'var(--color-accent)' }}
+                  >
+                    🔍 {line.replace(/\[(Searching|Researching)\]\s*/g, '')}
+                  </p>
+                );
+              }
+              if (line.includes('[Found]')) {
+                return (
+                  <p 
+                    key={i} 
+                    className="text-[13px] py-1"
+                    style={{ color: 'var(--status-success)' }}
+                  >
+                    ✓ {line.replace(/\[Found\]\s*/g, '')}
+                  </p>
+                );
+              }
+              return <p key={i}>{line}</p>;
+            })
+          ) : (
+            displayText || " "
+          )}
+        </div>
+        
+        {/* Pending indicator */}
+        {message.pending && (
+          <div 
+            className="flex items-center gap-1 mt-[var(--space-sm)]"
+            style={{ color: 'var(--color-text-muted)' }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--color-accent)' }} />
+            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--color-accent)', animationDelay: '0.2s' }} />
+            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--color-accent)', animationDelay: '0.4s' }} />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -5,49 +5,94 @@ interface LoginScreenProps {
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
-  const [email, setEmail] = useState("");
+  const [handle, setHandle] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const id = email.trim() || `guest-${Math.random().toString(36).slice(2, 7)}`;
+    const id = handle.trim() || `founder-${Math.random().toString(36).slice(2, 7)}`;
     onLogin(id);
   };
 
   return (
-    <div className="flex min-h-dvh flex-col bg-bg-body text-text-primary pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-      <div className="flex-1 px-6 py-10">
-        <div className="mx-auto flex h-full max-w-sm flex-col justify-center gap-10">
-          <div className="space-y-3 text-left">
-            <p className="text-[10px] uppercase tracking-[0.4em] text-text-muted">GitGud.vc</p>
-            <h1 className="text-3xl font-semibold tracking-tight text-text-primary">Founder Console</h1>
-            <p className="text-sm text-text-secondary">
-              YC-style coaching in five short steps. Drop your handle to unlock the mobile stack.
+    <div 
+      className="flex min-h-dvh flex-col"
+      style={{ 
+        backgroundColor: 'var(--color-bg)',
+        color: 'var(--color-text)',
+        paddingTop: 'env(safe-area-inset-top)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+        paddingLeft: 'env(safe-area-inset-left)',
+        paddingRight: 'env(safe-area-inset-right)'
+      }}
+    >
+      <div className="flex-1 px-[var(--space-lg)] py-[var(--space-xl)]">
+        <div className="mx-auto flex h-full max-w-sm flex-col justify-center gap-[var(--space-xl)]">
+          
+          {/* Logo / Title */}
+          <div className="space-y-[var(--space-md)] text-center">
+            <div 
+              className="inline-flex items-center justify-center w-16 h-16 rounded-[var(--radius-lg)] mb-[var(--space-md)]"
+              style={{ background: 'linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-2) 100%)' }}
+            >
+              <span className="text-2xl font-bold text-white">NC</span>
+            </div>
+            <h1 
+              className="text-[28px] font-semibold tracking-tight"
+              style={{ color: 'var(--color-text)' }}
+            >
+              NC/ACC Accelerator
+            </h1>
+            <p 
+              className="text-[16px] leading-relaxed"
+              style={{ color: 'var(--color-text-soft)' }}
+            >
+              AI-powered coaching from idea to launch. Deep research, creative ideation, and execution sprints.
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <label className="text-[10px] uppercase tracking-[0.3em] text-text-muted">Handle</label>
-            <input
-              type="text"
-              placeholder="@founder"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-base text-text-primary placeholder:text-text-muted focus:border-brand-primary focus:outline-none"
-            />
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-[var(--space-lg)]">
+            <div className="space-y-[var(--space-sm)]">
+              <label 
+                className="text-[13px] font-medium"
+                style={{ color: 'var(--color-text-muted)' }}
+              >
+                Your handle or name
+              </label>
+              <input
+                type="text"
+                placeholder="@yourname"
+                value={handle}
+                onChange={(e) => setHandle(e.target.value)}
+                className="w-full px-[var(--space-lg)] py-[var(--space-md)] text-[16px] rounded-[var(--radius-md)] border outline-none transition-all"
+                style={{ 
+                  backgroundColor: 'var(--color-bg-elevated)',
+                  borderColor: 'var(--color-border-subtle)',
+                  color: 'var(--color-text)',
+                  minHeight: 'var(--tap-min)'
+                }}
+                onFocus={(e) => e.target.style.borderColor = 'var(--color-accent)'}
+                onBlur={(e) => e.target.style.borderColor = 'var(--color-border-subtle)'}
+              />
+            </div>
+            
             <button
               type="submit"
-              className="w-full rounded-2xl bg-brand-primary py-3 text-base font-semibold text-text-inverse transition hover:bg-brand-primary-soft"
+              className="btn-primary w-full text-[16px]"
             >
-              Enter studio
+              Start Your Journey
             </button>
           </form>
 
-          <div className="text-xs text-text-muted uppercase tracking-[0.4em] text-center">
-            No fluff · 9 days · 90 minutes
+          {/* Footer */}
+          <div 
+            className="text-[13px] text-center space-y-[var(--space-sm)]"
+            style={{ color: 'var(--color-text-muted)' }}
+          >
+            <p>Deep profile research · Creative ideation · 90-min sprints</p>
           </div>
         </div>
       </div>
     </div>
   );
 };
-

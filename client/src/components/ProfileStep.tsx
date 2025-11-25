@@ -17,13 +17,13 @@ interface ProfileStepProps {
 }
 
 const DEFAULT_SEED =
-  "Hi! I'm ready to build my founder profile. Please introduce yourself and start the identity scan.";
+  "Share your name and LinkedIn (or a quick bio) to get started.";
 
 const DEFAULT_VIBE = {
-  badge: "AGENT ONLINE",
-  description: "Fast, terse YC-style coaching.",
-  accentClass: "text-yellow-300",
-  panelClassName: "bg-[#0e111b]"
+  badge: "DEEP RESEARCH MODE",
+  description: "I'll research your background thoroughly.",
+  accentClass: "",
+  panelClassName: ""
 };
 
 export const ProfileStep: React.FC<ProfileStepProps> = ({
@@ -31,12 +31,12 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
   onComplete,
   flowId,
   overrideSeed,
-  placeholder = "Type your answer...",
+  placeholder = "Share your LinkedIn or introduce yourself...",
   vibe = DEFAULT_VIBE
 }) => {
   const mergedVibe = { ...DEFAULT_VIBE, ...vibe };
   const profileCacheKey = React.useMemo(
-    () => (userId ? `gitgud_profile_${userId}` : undefined),
+    () => (userId ? `ncacc_profile_${userId}` : undefined),
     [userId]
   );
   const { messages, isStreaming, sendMessage } = useChat(userId, flowId);
@@ -51,6 +51,8 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
     founder?: string;
     location?: string;
     background?: string;
+    experience_tier?: string;
+    funding_history?: string;
     loves?: string;
     hates?: string;
     unfair_advantages?: string;
@@ -89,9 +91,8 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
           const merged = { ...parsed, ...prev };
           if (merged.founder && merged.background) {
             merged.ready = true;
-            // INSTANT welcome for returning users - no waiting for AI
             setHasExistingProfile(true);
-            setMemoryCheckDone(true); // Skip the AI memory check
+            setMemoryCheckDone(true);
           }
           return merged;
         });
@@ -106,35 +107,19 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Check for existing memory on mount - only if cache didn't already detect it
+  // Check for existing memory on mount
   useEffect(() => {
-    // Skip if we already detected existing profile from cache
-    if (hasExistingProfile && memoryCheckDone) {
-      return;
-    }
+    if (hasExistingProfile && memoryCheckDone) return;
     
-    // Look for signals in the first assistant message that memory exists
     const firstAssistantMsg = messages.find(m => m.role === "assistant");
     if (firstAssistantMsg && !memoryCheckDone) {
       setMemoryCheckDone(true);
-      
-      // Check if the message indicates existing knowledge
       const content = firstAssistantMsg.content.toLowerCase();
       const knowledgeIndicators = [
-        "welcome back",
-        "i already know",
-        "i remember you",
-        "according to my memory",
-        "from what i know about you",
-        "based on our previous",
-        "we've discussed",
-        "you've told me",
-        "your profile is ready"
+        "welcome back", "i already know", "i remember you",
+        "your profile is ready", "returning user"
       ];
-      
-      const hasKnowledge = knowledgeIndicators.some(indicator => content.includes(indicator));
-      
-      if (hasKnowledge && !hasExistingProfile) {
+      if (knowledgeIndicators.some(indicator => content.includes(indicator))) {
         setHasExistingProfile(true);
       }
     }
@@ -142,39 +127,26 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
 
   // Extract profile data from messages
   useEffect(() => {
-    // Look through all assistant messages for profile data
     for (const msg of messages.filter(m => m.role === "assistant").reverse()) {
       if (msg.content) {
-        // detect checklist ready signal
-        if (msg.content.toLowerCase().includes("[x] bio/background")) {
-          setHasExistingProfile(true);
-          persistProfile((prev) => ({ ...prev, ready: true }));
-        }
-        // Check if message contains READY signal
         if (msg.content.includes('READY')) {
           persistProfile(prev => ({ ...prev, ready: true }));
         }
         
-        // Detect completion signals for other flows
         if (msg.content.includes('IDEATION_RESULTS') || 
             msg.content.includes('SPRINT_PLAN') || 
             msg.content.includes('VIBECELERATOR_STATUS')) {
            persistProfile(prev => ({ ...prev, ready: true }));
         }
         
-        // Robust JSON extraction
         try {
           const contentToParse = stripAnsi(msg.content);
-          
-          // 1. Try to find the JSON block
-          // We look for the block, but we also fall back to looking for the JSON object directly
           let jsonContent = "";
           const codeBlockMatch = contentToParse.match(/```(?:json)?(?:\s*FOUNDER_PROFILE)?\s*([\s\S]*?)\s*```/i);
           
           if (codeBlockMatch) {
             jsonContent = codeBlockMatch[1];
           } else {
-            // Fallback: look for a large JSON-like object { "founder": ... }
             const objectMatch = contentToParse.match(/\{[\s\S]*"founder"[\s\S]*\}/);
             if (objectMatch) {
               jsonContent = objectMatch[0];
@@ -182,16 +154,8 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
           }
 
           if (jsonContent) {
-            // Attempt 1: Clean and Parse
             try {
-              // Handle common LLM JSON errors:
-              // 1. Real newlines inside strings (forbidden in JSON) -> replace with space or \n
-              // 2. Trailing commas -> remove
-              let cleanJson = jsonContent
-                .replace(/,\s*}/g, "}") // remove trailing comma
-                // escape unescaped newlines in strings? Difficult to do perfectly with regex.
-                // instead, we hope standard parse works, or we use the regex extractor below.
-              
+              const cleanJson = jsonContent.replace(/,\s*}/g, "}");
               const data = JSON.parse(cleanJson);
               
               if (data.founder || data.background) {
@@ -202,52 +166,40 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
                     founder: sanitize(data.founder),
                     location: sanitize(data.location),
                     background: sanitize(data.background),
+                    experience_tier: data.experience_tier,
+                    funding_history: sanitize(data.funding_history),
                     loves: sanitize(data.loves),
                     hates: sanitize(data.hates),
                     unfair_advantages: sanitize(data.unfair_advantages),
-                    ready: true // Force ready if we got a valid parse
+                    ready: true
                   };
                   if (next.founder && next.background) {
                      setHasExistingProfile(true);
                   }
                   return next;
                 });
-                // If we successfully parsed, we're done with this message
                 continue;
               }
             } catch (e) {
-              // console.log("Standard parse failed, trying regex extraction");
+              // Try regex extraction
             }
 
-            // Attempt 2: Regex Extraction (Roboust to bad JSON)
-            // We look for keys and capture values until the next quote-comma-newline sequence or similar
             const extractField = (text: string, key: string) => {
-              // Match "key": "value" handling escaped quotes and newlines
-              // We assume keys are "key"
               const regex = new RegExp(`"${key}"\\s*:\\s*"([\\s\\S]*?)"(?=\\s*[,}]\\s*)`, "i");
               const match = text.match(regex);
               return match ? match[1] : undefined;
             };
 
             const founder = extractField(jsonContent, "founder");
-            const location = extractField(jsonContent, "location");
             const background = extractField(jsonContent, "background");
-            const loves = extractField(jsonContent, "loves");
-            const hates = extractField(jsonContent, "hates");
-            const unfair_advantages = extractField(jsonContent, "unfair_advantages");
 
             if (founder || background) {
               persistProfile(prev => {
                 const next = {
                   ...prev,
                   founder: founder ? sanitize(founder) : prev.founder,
-                  location: location ? sanitize(location) : prev.location,
                   background: background ? sanitize(background) : prev.background,
-                  loves: loves ? sanitize(loves) : prev.loves,
-                  hates: hates ? sanitize(hates) : prev.hates,
-                  unfair_advantages: unfair_advantages ? sanitize(unfair_advantages) : prev.unfair_advantages,
                 };
-                
                 if (next.founder && next.background) {
                    next.ready = true;
                    setHasExistingProfile(true);
@@ -281,13 +233,11 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // Validate file type
     if (file.type !== 'application/pdf') {
       alert('Please upload a PDF file');
       return;
     }
     
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       alert('File size must be less than 5MB');
       return;
@@ -296,15 +246,7 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
     setUploadingFile(true);
     
     try {
-      // Create form data
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      // For now, we'll send a message about the PDF upload
-      // In a real implementation, you'd upload to a server and process the PDF
-      await sendMessage(`I'd like to upload my resume/document: ${file.name} (PDF upload feature coming soon)`);
-      
-      // Clear the input
+      await sendMessage(`I'd like to upload my resume/document: ${file.name}`);
       e.target.value = '';
     } catch (error) {
       console.error('Upload failed:', error);
@@ -314,145 +256,245 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
     }
   };
 
-  // Debug: Check if profile is "complete" by looking for a signal in the messages
-  // In a real app, the backend would send a specific event, but for now we can adds a "manual" next button
-  // or look for keywords. We'll add a manual "I'm done" button for this MVP phase.
-  // Calculate profile completion
-  const requiredFields = ['founder', 'background', 'stage', 'goals'];
-  const filledFields = requiredFields.filter(field => profileData[field as keyof typeof profileData]);
-  const completionPercent = hasExistingProfile ? 100 : Math.round((filledFields.length / requiredFields.length) * 100);
-  
-  // Alternative completion check: if user has had substantial back-and-forth
   const userMessageCount = messages.filter(m => m.role === "user").length;
   const hasSubstantialConversation = userMessageCount >= 3;
-  
-  // Show Next button if profile is complete OR user has had enough interaction OR has existing profile OR READY signal
   const isProfileFlow = !flowId || flowId === 'flow_profile';
+  
   let isStepComplete = hasExistingProfile || profileData.ready;
-
   if (!isStepComplete) {
     if (isProfileFlow) {
-      // Fast track: If we have founder name and background, we are good to go.
-      isStepComplete = (!!profileData.founder && !!profileData.background) || completionPercent >= 100 || (completionPercent >= 50 && hasSubstantialConversation);
+      isStepComplete = (!!profileData.founder && !!profileData.background);
     } else {
-      // Other flows: rely on READY signal or substantial conversation
       isStepComplete = hasSubstantialConversation;
     }
   }
   
-  // Alias for backward compatibility in JSX
-  const isProfileComplete = isStepComplete;
-  
-  // Force show next button if user has sent enough messages (fallback)
-  const showNextButton = isProfileComplete || userMessageCount >= 5;
-
-  const statusLabel = isStreaming
-    ? "Agent responding"
-    : showNextButton
-    ? "Ready for next step"
-    : "Waiting for input";
+  const showNextButton = isStepComplete || userMessageCount >= 5;
   const readyCopy = overrideSeed || mergedVibe.description || DEFAULT_SEED;
+
+  // Experience tier badge
+  const tierBadge = profileData.experience_tier ? {
+    'first-time': { label: 'First-time Founder', color: 'var(--color-accent)' },
+    'experienced': { label: 'Experienced', color: 'var(--status-success)' },
+    'serial': { label: 'Serial Founder', color: 'var(--color-accent-2)' }
+  }[profileData.experience_tier] : null;
 
   return (
     <div
-      className={`flex h-full flex-col rounded-3xl border border-white/10 bg-bg-surface-soft ${mergedVibe.panelClassName || ""}`}
+      className="flex h-full flex-col glass rounded-[var(--radius-lg)] border overflow-hidden"
+      style={{ borderColor: 'var(--color-border-subtle)' }}
     >
-      <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-        <span className={`text-[10px] uppercase tracking-[0.4em] ${mergedVibe.accentClass || "text-brand-primary"}`}>
-          {mergedVibe.badge}
-        </span>
-        <span className="flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-text-muted">
+      {/* Header */}
+      <div 
+        className="flex items-center justify-between px-[var(--space-lg)] py-[var(--space-md)] border-b"
+        style={{ borderColor: 'var(--color-border-subtle)' }}
+      >
+        <div className="flex items-center gap-[var(--space-md)]">
+          <span 
+            className="text-[11px] uppercase tracking-[0.2em] font-medium"
+            style={{ color: 'var(--color-accent)' }}
+          >
+              {mergedVibe.badge}
+          </span>
+          {tierBadge && (
+            <span 
+              className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+              style={{ 
+                backgroundColor: `${tierBadge.color}20`,
+                color: tierBadge.color
+              }}
+            >
+              {tierBadge.label}
+            </span>
+            )}
+          </div>
+        <div className="flex items-center gap-[var(--space-sm)]">
           <span
-            className={`h-1.5 w-1.5 rounded-full ${
-              isStreaming
-                ? "bg-brand-primary animate-pulse"
-                : showNextButton
-                ? "bg-brand-primary"
-                : "bg-border-subtle"
-            }`}
+            className="w-2 h-2 rounded-full"
+            style={{
+              backgroundColor: isStreaming 
+                ? 'var(--color-accent)' 
+                : showNextButton 
+                ? 'var(--status-success)' 
+                : 'var(--color-text-muted)'
+            }}
           />
-          {statusLabel}
-        </span>
+          <span 
+            className="text-[11px] font-medium"
+            style={{ color: 'var(--color-text-muted)' }}
+          >
+            {isStreaming ? "Researching..." : showNextButton ? "Ready" : "Waiting"}
+          </span>
+        </div>
       </div>
 
+      {/* Messages */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        <div className="h-full overflow-y-auto px-4 py-4 space-y-3">
+        <div className="h-full overflow-y-auto px-[var(--space-lg)] py-[var(--space-lg)] space-y-[var(--space-md)]">
+          
+          {/* Welcome card when empty */}
           {messages.length === 0 && (
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-text-primary">
-              <p className="text-[10px] uppercase tracking-[0.4em] text-text-muted">Ready when you are</p>
-              <p className="mt-2 whitespace-pre-line">{readyCopy}</p>
-              {placeholder && <p className="mt-2 text-xs text-text-secondary">{placeholder}</p>}
+            <div 
+              className="glass rounded-[var(--radius-md)] p-[var(--space-lg)] border"
+              style={{ borderColor: 'var(--color-border-subtle)' }}
+            >
+              <p 
+                className="text-[11px] uppercase tracking-[0.2em] font-medium mb-[var(--space-sm)]"
+                style={{ color: 'var(--color-text-muted)' }}
+              >
+                Ready when you are
+              </p>
+              <p 
+                className="text-[16px] leading-relaxed"
+                style={{ color: 'var(--color-text)' }}
+              >
+                {readyCopy}
+              </p>
+              <p 
+                className="text-[13px] mt-[var(--space-md)]"
+                style={{ color: 'var(--color-text-soft)' }}
+              >
+                {placeholder}
+              </p>
             </div>
           )}
 
+          {/* Profile summary card */}
           {profileData.founder && (
-            <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
-              <p className="text-sm font-semibold text-text-primary">{profileData.founder}</p>
-              {profileData.background && <p className="mt-1 text-sm text-text-secondary">{profileData.background}</p>}
-            </div>
-          )}
-
+            <div 
+              className="glass rounded-[var(--radius-md)] p-[var(--space-lg)] border"
+              style={{ borderColor: 'var(--color-accent-soft)' }}
+            >
+              <p 
+                className="text-[16px] font-semibold"
+                style={{ color: 'var(--color-text)' }}
+              >
+                {profileData.founder}
+              </p>
+            {profileData.background && (
+                <p 
+                  className="text-[14px] mt-[var(--space-sm)] leading-relaxed"
+                  style={{ color: 'var(--color-text-soft)' }}
+                >
+                  {profileData.background}
+                </p>
+              )}
+              {profileData.funding_history && profileData.funding_history !== 'N/A' && (
+                <p 
+                  className="text-[13px] mt-[var(--space-sm)]"
+                  style={{ color: 'var(--color-accent)' }}
+                >
+                  💰 {profileData.funding_history}
+                </p>
+              )}
+          </div>
+        )}
+        
+          {/* Returning user notice */}
           {hasExistingProfile && (
-            <div className="rounded-2xl border border-brand-primary/25 bg-brand-primary/10 p-3 text-xs uppercase tracking-[0.3em] text-brand-primary">
-              Profile cached. Update anything or tap Next.
-            </div>
-          )}
+            <div 
+              className="rounded-[var(--radius-md)] p-[var(--space-md)] text-[13px] font-medium"
+              style={{ 
+                backgroundColor: 'var(--color-accent-soft)',
+                color: 'var(--color-accent)'
+              }}
+            >
+              Profile loaded. Update anything or continue to next step.
+          </div>
+        )}
 
+          {/* Chat messages */}
           {messages.map((msg) => (
             <MessageBubble key={msg.id} message={msg} />
           ))}
-
-          <div ref={bottomRef} />
+        
+        <div ref={bottomRef} />
         </div>
       </div>
 
-      <div className="border-t border-white/10 bg-bg-surface px-4 py-3 space-y-3">
-        <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.3em] text-text-muted">
-          <span>{statusLabel}</span>
+      {/* Input area */}
+      <div 
+        className="glass px-[var(--space-lg)] py-[var(--space-md)] border-t space-y-[var(--space-md)]"
+        style={{ borderColor: 'var(--color-border-subtle)' }}
+      >
+        {/* Status + Next button */}
+        <div className="flex items-center justify-between">
+          <span 
+            className="text-[11px] font-medium"
+            style={{ color: 'var(--color-text-muted)' }}
+          >
+            {isStreaming ? "Agent researching..." : showNextButton ? "Ready to continue" : "Waiting for input"}
+              </span>
           <button
             onClick={onComplete}
             disabled={!showNextButton}
-            className={`rounded-full px-4 py-2 text-[10px] font-semibold tracking-[0.3em] transition ${
-              showNextButton
-                ? "bg-brand-primary text-text-inverse shadow hover:bg-brand-primary-soft"
-                : "bg-white/5 text-text-muted cursor-not-allowed"
-            }`}
+            className="spring text-[13px] font-semibold px-[var(--space-lg)] rounded-[var(--radius-md)] transition-all"
+            style={{ 
+              minHeight: 'var(--tap-min)',
+              background: showNextButton 
+                ? 'linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-2) 100%)' 
+                : 'var(--color-bg-elevated)',
+              color: showNextButton ? 'white' : 'var(--color-text-muted)',
+              opacity: showNextButton ? 1 : 0.5,
+              cursor: showNextButton ? 'pointer' : 'not-allowed'
+            }}
           >
-            Next
+            Next Step →
           </button>
         </div>
-        <div className="flex items-end gap-2 rounded-2xl border border-white/10 bg-black/30 px-3 py-2">
-          <textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+
+        {/* Input row */}
+        <div 
+          className="flex items-end gap-[var(--space-sm)] rounded-[var(--radius-md)] border px-[var(--space-md)] py-[var(--space-sm)]"
+          style={{ 
+            backgroundColor: 'var(--color-bg)',
+            borderColor: 'var(--color-border-subtle)'
+          }}
+        >
+            <textarea
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={placeholder}
-            rows={1}
-            className="flex-1 resize-none bg-transparent text-sm text-text-primary placeholder-text-muted outline-none"
-            onInput={(e) => {
-              const target = e.target as HTMLTextAreaElement;
+              placeholder={placeholder}
+              rows={1}
+            className="flex-1 resize-none bg-transparent text-[16px] outline-none py-[var(--space-sm)]"
+            style={{ 
+              color: 'var(--color-text)',
+              minHeight: 'var(--tap-min)'
+            }}
+              onInput={(e) => {
+                const target = e.target as HTMLTextAreaElement;
               target.style.height = "auto";
               target.style.height = Math.min(target.scrollHeight, 120) + "px";
+              }}
+            />
+            <button
+              onClick={handleSend}
+              disabled={!draft.trim()}
+            className="spring flex items-center justify-center rounded-[var(--radius-md)] text-[14px] font-semibold transition-all"
+            style={{ 
+              width: 'var(--tap-min)',
+              height: 'var(--tap-min)',
+              background: draft.trim() 
+                ? 'linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-2) 100%)' 
+                : 'var(--color-bg-elevated)',
+              color: draft.trim() ? 'white' : 'var(--color-text-muted)'
             }}
-          />
-          <button
-            onClick={handleSend}
-            disabled={!draft.trim()}
-            className={`h-10 w-10 rounded-full text-sm font-semibold transition ${
-              draft.trim()
-                ? "bg-brand-primary text-text-inverse hover:bg-brand-primary-soft"
-                : "bg-white/5 text-text-muted cursor-not-allowed"
-            }`}
           >
-            Send
-          </button>
-        </div>
-        <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.3em] text-text-muted">
-          <label className="cursor-pointer hover:text-text-primary">
-            {uploadingFile ? "Uploading…" : "Attach PDF"}
+            ↑
+            </button>
+          </div>
+          
+        {/* Helper text */}
+        <div 
+          className="flex items-center justify-between text-[11px]"
+          style={{ color: 'var(--color-text-muted)' }}
+        >
+          <label className="spring cursor-pointer flex items-center gap-[var(--space-xs)]" style={{ minHeight: 'var(--tap-min)', display: 'flex', alignItems: 'center' }}>
+            📎 {uploadingFile ? "Uploading…" : "Attach PDF"}
             <input type="file" accept=".pdf" onChange={handleFileUpload} disabled={uploadingFile} className="hidden" />
           </label>
-          <span>Enter sends</span>
+          <span>Return to send</span>
         </div>
       </div>
     </div>
