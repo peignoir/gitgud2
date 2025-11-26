@@ -6,7 +6,7 @@ import {
   runWorkflow,
   processSlashCommand,
   slashCompleter
-} from "./core/workflow";
+} from "./core/workflow.js";
 
 async function main() {
   console.log("YC Mentor Workflow – ask your startup question (Ctrl+C to exit)");

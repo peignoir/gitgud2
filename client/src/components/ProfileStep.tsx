@@ -26,6 +26,37 @@ const DEFAULT_VIBE = {
   panelClassName: ""
 };
 
+// Quick action chips per flow type
+const QUICK_ACTIONS: Record<string, { label: string; prompt: string; emoji: string }[]> = {
+  flow_profile: [
+    { label: "I'm technical", prompt: "I'm a technical founder with engineering background", emoji: "💻" },
+    { label: "First-time founder", prompt: "I'm a first-time founder", emoji: "🌱" },
+    { label: "Serial entrepreneur", prompt: "I've built and sold companies before", emoji: "🚀" },
+  ],
+  flow_ideation: [
+    { label: "B2B SaaS", prompt: "I want to explore B2B SaaS ideas", emoji: "🏢" },
+    { label: "Consumer", prompt: "I'm interested in consumer products", emoji: "📱" },
+    { label: "AI/ML", prompt: "I want to leverage AI in my startup", emoji: "🤖" },
+    { label: "Surprise me", prompt: "Give me something unexpected based on my profile", emoji: "✨" },
+  ],
+  flow_sprint: [
+    { label: "Landing page", prompt: "Help me build a landing page in 90 minutes", emoji: "🎨" },
+    { label: "Customer calls", prompt: "Help me set up 5 customer discovery calls", emoji: "📞" },
+    { label: "MVP scope", prompt: "Help me define the smallest possible MVP", emoji: "🎯" },
+  ],
+  flow_vibecelerator: [
+    { label: "Check in", prompt: "Here's my progress update", emoji: "📊" },
+    { label: "I'm stuck", prompt: "I'm feeling stuck, need help", emoji: "🆘" },
+    { label: "Celebrate", prompt: "I hit a milestone!", emoji: "🎉" },
+  ],
+  flow_console: [
+    { label: "Fundraising", prompt: "Should I raise money now?", emoji: "💰" },
+    { label: "Growth", prompt: "How do I get my first 100 users?", emoji: "📈" },
+    { label: "Hiring", prompt: "When should I make my first hire?", emoji: "👥" },
+    { label: "Pricing", prompt: "How should I price my product?", emoji: "💵" },
+  ],
+};
+
 export const ProfileStep: React.FC<ProfileStepProps> = ({
   userId,
   onComplete,
@@ -356,6 +387,26 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
               >
                 {placeholder}
               </p>
+              
+              {/* Quick action chips */}
+              {flowId && QUICK_ACTIONS[flowId] && (
+                <div className="flex flex-wrap gap-[var(--space-sm)] mt-[var(--space-lg)]">
+                  {QUICK_ACTIONS[flowId].map((action) => (
+                    <button
+                      key={action.label}
+                      onClick={() => {
+                        setDraft(action.prompt);
+                        // Auto-send after a brief moment
+                        setTimeout(() => sendMessage(action.prompt), 100);
+                      }}
+                      className="chip spring"
+                    >
+                      <span>{action.emoji}</span>
+                      <span>{action.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
