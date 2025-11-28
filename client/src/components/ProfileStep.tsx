@@ -77,6 +77,15 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
   const stripAnsi = (value: string) => value.replace(/\x1b\[[0-9;]*m/g, "");
   const sanitize = (value?: string) =>
     value ? stripAnsi(value).replace(/\s+/g, " ").trim() : value;
+  const sanitizeField = (value: unknown) => {
+    if (typeof value === "string") {
+      return sanitize(value);
+    }
+    if (Array.isArray(value)) {
+      return sanitize(value.join("; "));
+    }
+    return undefined;
+  };
 
   const [profileData, setProfileData] = useState<{
     founder?: string;
@@ -87,6 +96,7 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
     loves?: string;
     hates?: string;
     unfair_advantages?: string;
+    weaknesses?: string;
     stage?: string;
     goals?: string;
     ready?: boolean;
@@ -194,14 +204,15 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
                   const next = {
                     ...prev,
                     ...data,
-                    founder: sanitize(data.founder),
-                    location: sanitize(data.location),
-                    background: sanitize(data.background),
+                    founder: sanitizeField(data.founder),
+                    location: sanitizeField(data.location),
+                    background: sanitizeField(data.background),
                     experience_tier: data.experience_tier,
-                    funding_history: sanitize(data.funding_history),
-                    loves: sanitize(data.loves),
-                    hates: sanitize(data.hates),
-                    unfair_advantages: sanitize(data.unfair_advantages),
+                    funding_history: sanitizeField(data.funding_history),
+                    loves: sanitizeField(data.loves),
+                    hates: sanitizeField(data.hates),
+                    unfair_advantages: sanitizeField(data.unfair_advantages),
+                    weaknesses: sanitizeField(data.weaknesses),
                     ready: true
                   };
                   if (next.founder && next.background) {
@@ -286,6 +297,19 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
       setUploadingFile(false);
     }
   };
+
+  const stripFounderProfileBlock = (text: string): string => {
+    if (!text) return text;
+    return text.replace(/```(?:json)?\s*FOUNDER_PROFILE[\s\S]*?```/gi, "").trim();
+  };
+
+  const displayMessages = messages.map((msg) => {
+    if (msg.role !== "assistant" || !msg.content) {
+      return msg;
+    }
+    const cleaned = stripFounderProfileBlock(msg.content);
+    return cleaned === msg.content ? msg : { ...msg, content: cleaned };
+  });
 
   const userMessageCount = messages.filter(m => m.role === "user").length;
   const hasSubstantialConversation = userMessageCount >= 3;
@@ -455,7 +479,7 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
         )}
 
           {/* Chat messages */}
-          {messages.map((msg) => (
+          {displayMessages.map((msg) => (
             <MessageBubble key={msg.id} message={msg} />
           ))}
         
