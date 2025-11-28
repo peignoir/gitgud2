@@ -42,19 +42,12 @@ const MessageBubble = memo(({ message, isNew = false }: MessageBubbleProps) => {
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} message-enter py-2`}>
       <div
         ref={bubbleRef}
-        className={`max-w-[90%] px-4 py-3 text-[15px] leading-relaxed transition-all ${
-          isUser 
-            ? "bg-[#f3f4f6] text-gray-900 rounded-[20px] rounded-br-sm" 
-            : "bg-transparent text-gray-900 p-0 pl-1" // Minimal assistant style
+        className={`max-w-[80%] px-4 py-3 text-[15px] leading-relaxed transition-all rounded-2xl ${
+          isUser
+            ? "bg-[#0A84FF] text-white rounded-br-sm"
+            : "bg-[#F2F2F7] text-gray-900 rounded-bl-sm"
         }`}
       >
-        {/* Label (Only for assistant to distinguish) */}
-        {!isUser && (
-          <p className="text-[11px] font-medium text-gray-400 mb-1 uppercase tracking-wider">
-            Mentor
-          </p>
-        )}
-        
         {/* Content */}
         <div className="whitespace-pre-line">
           {message.pending && !displayText ? (

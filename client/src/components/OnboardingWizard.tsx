@@ -256,7 +256,7 @@ export const OnboardingWizard = () => {
   };
 
   const stageNav = (
-    <div className="flex items-center gap-[var(--space-sm)] py-1 px-1">
+    <div className="flex items-center gap-[6px] py-1 px-1">
       {stageOrder.slice(1).map((stageKey) => {
         const meta = stepConfig[stageKey];
         const stageIndex = stageOrder.indexOf(stageKey);
@@ -269,22 +269,12 @@ export const OnboardingWizard = () => {
             key={stageKey}
             disabled={isLocked}
             onClick={() => handleStageSelect(stageKey)}
-            className="spring rounded-[var(--radius-md)] px-[var(--space-md)] text-[12px] font-semibold transition-all"
+            className="spring rounded-full px-3 py-1.5 text-[12px] font-medium transition-all"
             style={{
-              minHeight: 'var(--tap-min)',
-              display: 'flex',
-              alignItems: 'center',
-              background: isActive 
-                ? 'linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-2) 100%)' 
-                : isComplete 
-                ? 'var(--color-accent-soft)' 
-                : 'transparent',
-              color: isActive 
-                ? 'white' 
-                : isComplete 
-                ? 'var(--color-accent)' 
-                : 'var(--color-text-muted)',
-              border: `1px solid ${isActive ? 'transparent' : isComplete ? 'var(--color-accent)' : 'var(--color-border-subtle)'}`,
+              minHeight: 32,
+              backgroundColor: isActive ? '#0A84FF' : '#F2F2F7',
+              color: isActive ? '#FFFFFF' : '#3C3C43',
+              border: 'none',
               opacity: isLocked ? 0.4 : 1,
               cursor: isLocked ? 'not-allowed' : 'pointer'
             }}
@@ -304,26 +294,20 @@ export const OnboardingWizard = () => {
     <Layout 
       topNav={stageNav}
       onReset={handleReset}
+      title={currentConfig.shortTitle}
+      subtitle={currentConfig.description}
     >
-      <StepSummary meta={currentConfig} />
       <div className="flex-1 min-h-0">
-        {step === "profile" && (
-          <ProfileStep
-            userId={userId}
-            flowId={currentConfig.flowId}
-            overrideSeed={currentConfig.seed}
-            placeholder={currentConfig.placeholder}
-            vibe={currentConfig.vibe}
-            onComplete={() => setStep("idea")}
-          />
-        )}
-        {step !== "profile" && step !== "result" && step !== "console" && (
+        {step !== "result" && (
           <ProfileStep
             userId={userId}
             flowId={currentConfig.flowId}
             onComplete={() => {
-              const nextStep = stageOrder[currentStageIndex + 1] ?? "result";
-              setStep(nextStep);
+              const nextStep =
+                step === "console" ? "console" : stageOrder[currentStageIndex + 1] ?? "result";
+              if (nextStep !== step) {
+                setStep(nextStep);
+              }
             }}
             overrideSeed={currentConfig.seed}
             placeholder={currentConfig.placeholder}

@@ -5,13 +5,17 @@ interface LayoutProps {
   onReset?: () => void;
   topNav?: React.ReactNode;
   contentClassName?: string;
+  title?: string;
+  subtitle?: string;
 }
 
 export const Layout: React.FC<LayoutProps> = ({
   children,
   onReset,
   topNav,
-  contentClassName = ""
+  contentClassName = "",
+  title,
+  subtitle
 }) => {
   return (
     <div 
@@ -24,26 +28,39 @@ export const Layout: React.FC<LayoutProps> = ({
         paddingRight: 'env(safe-area-inset-right)'
       }}
     >
-      {/* Minimal Header */}
+      {/* Minimal iOS-style Header */}
       <header 
-        className="flex items-center justify-between px-[var(--space-lg)] py-[var(--space-sm)]"
+        className="flex flex-col gap-1 px-[var(--space-lg)] pt-2 pb-2 border-b border-[var(--color-border-subtle)] bg-[var(--color-bg)]/95"
       >
-        {/* Step Navigation (now integrated into header or just below) */}
-        <div className="flex-1 overflow-x-auto no-scrollbar">
-           {topNav}
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col">
+            {title && (
+              <span className="text-[15px] font-semibold text-gray-900">
+                {title}
+              </span>
+            )}
+            {subtitle && (
+              <span className="text-[12px] text-gray-500">
+                {subtitle}
+              </span>
+            )}
+          </div>
+
+          {onReset && (
+            <button
+              onClick={onReset}
+              className="ml-4 p-2 text-[12px] text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
+              aria-label="Start fresh and clear profile"
+            >
+              Reset
+            </button>
+          )}
         </div>
 
-        {onReset && (
-          <button
-            onClick={onReset}
-            className="ml-4 p-2 text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
-            aria-label="Start Fresh"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-              <path d="M3 3v5h5" />
-            </svg>
-          </button>
+        {topNav && (
+          <div className="mt-1 -mx-1 overflow-x-auto no-scrollbar">
+            {topNav}
+          </div>
         )}
       </header>
 
