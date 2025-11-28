@@ -1,7 +1,7 @@
-import { OnboardingWizard } from "./components/OnboardingWizard";
+import MobileApp from "./mobile";
 
 const App = () => {
-  return <OnboardingWizard />;
+  return <MobileApp />;
 };
 
 export default App;

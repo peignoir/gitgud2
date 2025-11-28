@@ -6,42 +6,42 @@
   :root {
     color-scheme: light;
 
-    /* Clean White Theme Design System */
+    /* iOS-style Design System */
     
     /* Backgrounds */
-    --color-bg: #ffffff;
-    --color-bg-elevated: #f3f4f6; /* gray-100 */
-    --bg-body: #ffffff;
-    --bg-surface: #f9fafb; /* gray-50 */
-    --bg-surface-soft: #f3f4f6;
+    --color-bg: #F2F2F7;
+    --color-bg-elevated: #FFFFFF;
+    --bg-body: #F2F2F7;
+    --bg-surface: #FFFFFF;
+    --bg-surface-soft: #F2F2F7;
     
     /* Accent */
-    --color-accent: #3b82f6; /* blue-500 */
-    --color-accent-soft: #eff6ff; /* blue-50 */
-    --color-accent-2: #8b5cf6; /* violet-500 */
-    --brand-primary: #3b82f6;
-    --brand-primary-soft: #eff6ff;
+    --color-accent: #007AFF;
+    --color-accent-soft: #E5F1FF;
+    --color-accent-2: #5856D6;
+    --brand-primary: #007AFF;
+    --brand-primary-soft: #E5F1FF;
     
     /* Text */
-    --color-text: #111827; /* gray-900 */
-    --color-text-soft: #4b5563; /* gray-600 */
-    --color-text-muted: #9ca3af; /* gray-400 */
-    --text-primary: #111827;
-    --text-secondary: #4b5563;
-    --text-muted: #9ca3af;
-    --text-inverse: #ffffff;
-    --color-danger: #ef4444; /* red-500 */
+    --color-text: #1C1C1E;
+    --color-text-soft: #3C3C43;
+    --color-text-muted: #8E8E93;
+    --text-primary: #1C1C1E;
+    --text-secondary: #3C3C43;
+    --text-muted: #8E8E93;
+    --text-inverse: #FFFFFF;
+    --color-danger: #FF3B30;
     
     /* Borders */
-    --color-border-subtle: #e5e7eb; /* gray-200 */
-    --border-subtle: #e5e7eb;
-    --border-strong: #d1d5db; /* gray-300 */
+    --color-border-subtle: #C6C6C8;
+    --border-subtle: #C6C6C8;
+    --border-strong: #AEAEB2;
     
     /* Status */
-    --status-success: #10b981; /* green-500 */
-    --status-warning: #f59e0b; /* amber-500 */
-    --status-danger: #ef4444;
-    --status-info: #3b82f6;
+    --status-success: #34C759;
+    --status-warning: #FF9500;
+    --status-danger: #FF3B30;
+    --status-info: #007AFF;
     
     /* Spacing */
     --space-xs: 4px;
@@ -51,27 +51,66 @@
     --space-xl: 32px;
     
     /* Radii */
+    --radius-sm: 8px;
     --radius-md: 12px;
     --radius-lg: 20px;
+    --radius-full: 9999px;
     
     /* Touch targets */
     --tap-min: 44px;
   }
 
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
   html,
   body {
+    margin: 0;
+    padding: 0;
     min-height: 100%;
     overscroll-behavior-y: none;
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body {
     background-color: var(--color-bg);
     color: var(--color-text);
-    font-family: -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    letter-spacing: -0.01em;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 17px;
+    line-height: 1.47;
+    letter-spacing: -0.022em;
     @apply min-h-dvh antialiased;
+  }
+
+  #root {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* iOS-style input focus */
+  input:focus,
+  textarea:focus {
+    outline: none;
+    border-color: var(--color-accent) !important;
+    box-shadow: 0 0 0 3px var(--color-accent-soft);
+  }
+
+  /* Smooth transitions */
+  button,
+  input,
+  a {
+    transition: all 0.15s ease;
+  }
+
+  button:active {
+    transform: scale(0.97);
   }
 }
 
@@ -84,26 +123,65 @@
     scrollbar-width: none;
   }
   
-  /* Clean background (no glass blur needed for white theme) */
-  .glass {
-    background: #ffffff;
-    /* Optional subtle transparency if desired, but keeping it clean for now */
+  /* iOS card surface */
+  .ios-card {
+    background: var(--bg-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05);
   }
   
-  /* Primary button */
+  /* Primary button - iOS blue pill */
   .btn-primary {
-    background: var(--color-text); /* Black button like many modern clean apps */
+    background: var(--color-accent);
     color: white;
-    font-weight: 500;
-    border-radius: 99px; /* Pill shape */
+    font-weight: 600;
+    font-size: 17px;
+    border-radius: var(--radius-full);
     min-height: var(--tap-min);
     padding: var(--space-md) var(--space-lg);
-    transition: opacity 0.15s ease;
+    border: none;
+    cursor: pointer;
   }
   
   .btn-primary:active {
     opacity: 0.8;
-    transform: scale(0.98);
+  }
+
+  .btn-primary:disabled {
+    background: #A0CFFF;
+    cursor: not-allowed;
+  }
+  
+  /* Secondary button - outline style */
+  .btn-secondary {
+    background: transparent;
+    color: var(--color-accent);
+    font-weight: 600;
+    font-size: 17px;
+    border-radius: var(--radius-full);
+    min-height: var(--tap-min);
+    padding: var(--space-md) var(--space-lg);
+    border: 1px solid var(--color-border-subtle);
+    cursor: pointer;
+  }
+  
+  .btn-secondary:active {
+    background: var(--color-accent-soft);
+  }
+  
+  /* iOS-style input */
+  .ios-input {
+    width: 100%;
+    padding: var(--space-md);
+    font-size: 17px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border-subtle);
+    background: var(--bg-surface);
+    color: var(--color-text);
+  }
+
+  .ios-input::placeholder {
+    color: var(--color-text-muted);
   }
   
   /* Subtle spring animation */
@@ -121,20 +199,23 @@
     align-items: center;
     gap: var(--space-xs);
     padding: 10px 16px;
-    border-radius: 16px;
-    font-size: 14px;
+    border-radius: var(--radius-full);
+    font-size: 15px;
     font-weight: 500;
-    background: #f3f4f6; /* gray-100 */
-    border: 1px solid transparent;
+    background: var(--bg-surface);
+    border: 1px solid var(--color-border-subtle);
     color: var(--color-text);
     transition: all 0.2s ease;
     white-space: nowrap;
-    min-height: 40px;
+    min-height: 36px;
+    cursor: pointer;
   }
   
   .chip:active {
     transform: scale(0.95);
-    background: #e5e7eb; /* gray-200 */
+    background: var(--color-accent-soft);
+    border-color: var(--color-accent);
+    color: var(--color-accent);
   }
   
   /* Typing indicator animation */
@@ -170,6 +251,16 @@
       transform: translateY(0) scale(1); 
     }
   }
+
+  /* Fade in animation */
+  .fade-in {
+    animation: fade-in 0.3s ease;
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
 }
 
 /* Hide scrollbars but keep functionality */
@@ -180,6 +271,21 @@
 
 /* Selection color */
 ::selection {
-  background: #e5e7eb;
+  background: var(--color-accent-soft);
   color: var(--color-text);
+}
+
+/* Mobile-first responsive container */
+@media (min-width: 480px) {
+  body {
+    display: flex;
+    justify-content: center;
+  }
+  
+  #root {
+    max-width: 430px;
+    width: 100%;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.1);
+    min-height: 100dvh;
+  }
 }
