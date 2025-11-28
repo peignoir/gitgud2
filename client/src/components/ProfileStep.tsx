@@ -300,7 +300,12 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
 
   const stripFounderProfileBlock = (text: string): string => {
     if (!text) return text;
-    const withoutJson = text.replace(/```(?:json)?\s*FOUNDER_PROFILE[\s\S]*?```/gi, "");
+    // Aggressively remove JSON blocks regardless of tags
+    let withoutJson = text.replace(/```(?:json)?\s*\{[\s\S]*?\}\s*```/gi, "");
+    
+    // Also catch the FOUNDER_PROFILE format specifically if not caught above
+    withoutJson = withoutJson.replace(/```(?:json)?\s*FOUNDER_PROFILE[\s\S]*?```/gi, "");
+
     const filtered = withoutJson
       .split("\n")
       .filter((line) => {
@@ -312,7 +317,8 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
           /^MENTOR$/i,
           /^===.*===$/,
           /^\[.*\]\s*(thinking\.\.\.|.*)/i,
-          /^Agent researching/i
+          /^Agent researching/i,
+          /^Structured block \(internal use only\):/i
         ];
         return !unwantedPatterns.some((pattern) => pattern.test(trimmed));
       })
