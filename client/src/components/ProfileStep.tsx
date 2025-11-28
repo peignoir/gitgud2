@@ -300,7 +300,24 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({
 
   const stripFounderProfileBlock = (text: string): string => {
     if (!text) return text;
-    return text.replace(/```(?:json)?\s*FOUNDER_PROFILE[\s\S]*?```/gi, "").trim();
+    const withoutJson = text.replace(/```(?:json)?\s*FOUNDER_PROFILE[\s\S]*?```/gi, "");
+    const filtered = withoutJson
+      .split("\n")
+      .filter((line) => {
+        const trimmed = line.trim();
+        if (!trimmed) {
+          return true;
+        }
+        const unwantedPatterns = [
+          /^MENTOR$/i,
+          /^===.*===$/,
+          /^\[.*\]\s*(thinking\.\.\.|.*)/i,
+          /^Agent researching/i
+        ];
+        return !unwantedPatterns.some((pattern) => pattern.test(trimmed));
+      })
+      .join("\n");
+    return filtered.trim();
   };
 
   const displayMessages = messages.map((msg) => {
