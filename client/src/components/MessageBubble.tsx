@@ -39,33 +39,24 @@ const MessageBubble = memo(({ message, isNew = false }: MessageBubbleProps) => {
   }, [isNew, isUser]);
 
   return (
-    <div className={`flex ${isUser ? "justify-end" : "justify-start"} message-enter`}>
+    <div className={`flex ${isUser ? "justify-end" : "justify-start"} message-enter py-2`}>
       <div
         ref={bubbleRef}
-        className="max-w-[88%] rounded-[var(--radius-md)] px-[var(--space-lg)] py-[var(--space-md)] text-[15px] leading-relaxed transition-all"
-        style={{
-          backgroundColor: isUser 
-            ? 'var(--color-accent-soft)' 
-            : 'var(--color-bg-elevated)',
-          border: `1px solid ${isUser ? 'var(--color-accent)' : 'var(--color-border-subtle)'}`,
-          borderRadius: isUser 
-            ? 'var(--radius-md) var(--radius-md) 4px var(--radius-md)' 
-            : 'var(--radius-md) var(--radius-md) var(--radius-md) 4px'
-        }}
+        className={`max-w-[90%] px-4 py-3 text-[15px] leading-relaxed transition-all ${
+          isUser 
+            ? "bg-[#f3f4f6] text-gray-900 rounded-[20px] rounded-br-sm" 
+            : "bg-transparent text-gray-900 p-0 pl-1" // Minimal assistant style
+        }`}
       >
-        {/* Label */}
-        <p 
-          className="text-[11px] uppercase tracking-[0.15em] font-medium mb-[var(--space-xs)]"
-          style={{ color: isUser ? 'var(--color-accent)' : 'var(--color-text-muted)' }}
-        >
-          {isUser ? "You" : "Mentor"}
-        </p>
+        {/* Label (Only for assistant to distinguish) */}
+        {!isUser && (
+          <p className="text-[11px] font-medium text-gray-400 mb-1 uppercase tracking-wider">
+            Mentor
+          </p>
+        )}
         
         {/* Content */}
-        <div 
-          className={`whitespace-pre-line ${message.pending && !displayText ? "min-h-[20px]" : ""}`}
-          style={{ color: 'var(--color-text)' }}
-        >
+        <div className="whitespace-pre-line">
           {message.pending && !displayText ? (
             // Typing indicator
             <div className="flex items-center gap-1.5 py-1">
@@ -74,33 +65,11 @@ const MessageBubble = memo(({ message, isNew = false }: MessageBubbleProps) => {
               <span className="typing-dot" />
             </div>
           ) : hasStatus ? (
-            // Render status messages with special styling
-            displayText.split('\n').map((line, i) => {
-              if (line.includes('[Searching]') || line.includes('[Researching]')) {
-                return (
-                  <p 
-                    key={i} 
-                    className="text-[13px] py-1 flex items-center gap-2"
-                    style={{ color: 'var(--color-accent)' }}
-                  >
-                    <span className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                    {line.replace(/\[(Searching|Researching)\]\s*/g, '')}
-                  </p>
-                );
-              }
-              if (line.includes('[Found]')) {
-                return (
-                  <p 
-                    key={i} 
-                    className="text-[13px] py-1"
-                    style={{ color: 'var(--status-success)' }}
-                  >
-                    ✓ {line.replace(/\[Found\]\s*/g, '')}
-                  </p>
-                );
-              }
-              return <p key={i}>{line}</p>;
-            })
+            // Collapsible status logic could go here, for now simple line
+            <p className="text-xs text-gray-400 italic flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+              Thinking...
+            </p>
           ) : (
             <span dangerouslySetInnerHTML={{ __html: formatContent(displayText) || " " }} />
           )}

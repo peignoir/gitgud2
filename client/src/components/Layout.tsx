@@ -24,54 +24,32 @@ export const Layout: React.FC<LayoutProps> = ({
         paddingRight: 'env(safe-area-inset-right)'
       }}
     >
-      {/* Header - Glass effect */}
+      {/* Minimal Header */}
       <header 
-        className="glass flex items-center justify-between px-[var(--space-lg)] py-[var(--space-md)] border-b"
-        style={{ borderColor: 'var(--color-border-subtle)' }}
+        className="flex items-center justify-between px-[var(--space-lg)] py-[var(--space-sm)]"
       >
-        <div>
-          <p 
-            className="text-[11px] uppercase tracking-[0.3em] font-medium"
-            style={{ color: 'var(--color-text-muted)' }}
-          >
-            NC/ACC
-          </p>
-          <p 
-            className="text-[20px] font-semibold leading-tight mt-0.5"
-            style={{ color: 'var(--color-text)' }}
-          >
-            Accelerator
-          </p>
+        {/* Step Navigation (now integrated into header or just below) */}
+        <div className="flex-1 overflow-x-auto no-scrollbar">
+           {topNav}
         </div>
+
         {onReset && (
           <button
             onClick={onReset}
-            className="spring text-[13px] font-medium px-3 py-2 rounded-[var(--radius-md)]"
-            style={{ 
-              color: 'var(--color-danger)',
-              minHeight: 'var(--tap-min)',
-              display: 'flex',
-              alignItems: 'center'
-            }}
+            className="ml-4 p-2 text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
+            aria-label="Start Fresh"
           >
-            Start Fresh
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+              <path d="M3 3v5h5" />
+            </svg>
           </button>
         )}
       </header>
 
-      {/* Step Navigation */}
-      {topNav && (
-        <div 
-          className="glass px-[var(--space-lg)] py-[var(--space-md)] border-b"
-          style={{ borderColor: 'var(--color-border-subtle)' }}
-        >
-          <div className="no-scrollbar overflow-x-auto -mx-1">{topNav}</div>
-        </div>
-      )}
-
       {/* Main Content */}
-      <main className="flex-1 min-h-0 overflow-hidden">
-        <div className={`flex h-full flex-col gap-[var(--space-lg)] p-[var(--space-lg)] ${contentClassName}`}>
+      <main className="flex-1 min-h-0 overflow-hidden flex flex-col relative">
+        <div className={`flex-1 flex flex-col ${contentClassName}`}>
           {children}
         </div>
       </main>
